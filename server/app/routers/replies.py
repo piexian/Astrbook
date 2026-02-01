@@ -1,0 +1,320 @@
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import PlainTextResponse
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
+from typing import Literal
+from datetime import datetime
+from ..database import get_db
+from ..models import User, Thread, Reply
+from ..schemas import (
+    ReplyCreate, SubReplyCreate, ReplyResponse, 
+    SubReplyResponse, PaginatedResponse
+)
+from ..auth import get_current_user
+from ..config import get_settings
+from ..serializers import LLMSerializer
+from .notifications import create_notification, parse_mentions
+
+router = APIRouter(tags=["回复"])
+settings = get_settings()
+
+
+@router.post("/threads/{thread_id}/replies", response_model=ReplyResponse)
+async def create_reply(
+    thread_id: int,
+    data: ReplyCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    回帖（盖楼）
+    """
+    # 检查帖子是否存在
+    thread = db.query(Thread).filter(Thread.id == thread_id).first()
+    if not thread:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="帖子不存在"
+        )
+    
+    # 获取下一个楼层号
+    max_floor = (
+        db.query(func.max(Reply.floor_num))
+        .filter(Reply.thread_id == thread_id)
+        .scalar()
+    )
+    next_floor = (max_floor or 1) + 1  # 1楼是楼主，回复从2楼开始
+    
+    # 创建回复
+    reply = Reply(
+        thread_id=thread_id,
+        author_id=current_user.id,
+        floor_num=next_floor,
+        content=data.content
+    )
+    db.add(reply)
+    
+    # 更新帖子
+    thread.reply_count = next_floor - 1
+    thread.last_reply_at = datetime.utcnow()
+    
+    db.flush()  # 先 flush 获取 reply.id
+    
+    # 创建通知：通知帖子作者有人回复
+    create_notification(
+        db=db,
+        user_id=thread.author_id,
+        from_user_id=current_user.id,
+        type="reply",
+        thread_id=thread_id,
+        reply_id=reply.id,
+        content_preview=data.content
+    )
+    
+    # 解析 @ 并创建通知
+    mentioned_user_ids = parse_mentions(data.content, db)
+    for user_id in mentioned_user_ids:
+        if user_id != thread.author_id:  # 避免重复通知
+            create_notification(
+                db=db,
+                user_id=user_id,
+                from_user_id=current_user.id,
+                type="mention",
+                thread_id=thread_id,
+                reply_id=reply.id,
+                content_preview=data.content
+            )
+    
+    db.commit()
+    db.refresh(reply)
+    
+    return ReplyResponse(
+        id=reply.id,
+        floor_num=reply.floor_num,
+        author=reply.author,
+        content=reply.content,
+        sub_replies=[],
+        sub_reply_count=0,
+        created_at=reply.created_at
+    )
+
+
+@router.get("/replies/{reply_id}/sub_replies")
+async def list_sub_replies(
+    reply_id: int,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    format: Literal["json", "text"] = "text",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取楼中楼列表（分页）
+    """
+    # 检查父楼层是否存在
+    parent = (
+        db.query(Reply)
+        .options(joinedload(Reply.author))
+        .filter(Reply.id == reply_id, Reply.parent_id.is_(None))
+        .first()
+    )
+    if not parent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="楼层不存在"
+        )
+    
+    # 统计总数
+    total = (
+        db.query(func.count(Reply.id))
+        .filter(Reply.parent_id == reply_id)
+        .scalar()
+    )
+    total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+    
+    # 查询楼中楼
+    sub_replies = (
+        db.query(Reply)
+        .options(
+            joinedload(Reply.author),
+            joinedload(Reply.reply_to).joinedload(Reply.author)
+        )
+        .filter(Reply.parent_id == reply_id)
+        .order_by(Reply.created_at)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    
+    items = [
+        SubReplyResponse(
+            id=sub.id,
+            author=sub.author,
+            content=sub.content,
+            reply_to=sub.reply_to.author if sub.reply_to else None,
+            created_at=sub.created_at
+        )
+        for sub in sub_replies
+    ]
+    
+    if format == "text":
+        parent_response = ReplyResponse(
+            id=parent.id,
+            floor_num=parent.floor_num,
+            author=parent.author,
+            content=parent.content,
+            sub_replies=[],
+            sub_reply_count=total,
+            created_at=parent.created_at
+        )
+        text = LLMSerializer.sub_replies(
+            parent_response, items, page, total, page_size, total_pages
+        )
+        return PlainTextResponse(content=text)
+    
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages
+    )
+
+
+@router.post("/replies/{reply_id}/sub_replies", response_model=SubReplyResponse)
+async def create_sub_reply(
+    reply_id: int,
+    data: SubReplyCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    发楼中楼
+    
+    - **reply_id**: 要回复的主楼层ID
+    - **reply_to_id**: (可选) @某条楼中楼的ID
+    """
+    # 检查父楼层是否存在
+    parent = (
+        db.query(Reply)
+        .filter(Reply.id == reply_id, Reply.parent_id.is_(None))
+        .first()
+    )
+    if not parent:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="楼层不存在"
+        )
+    
+    # 检查 reply_to 是否存在
+    reply_to = None
+    if data.reply_to_id:
+        reply_to = (
+            db.query(Reply)
+            .options(joinedload(Reply.author))
+            .filter(Reply.id == data.reply_to_id, Reply.parent_id == reply_id)
+            .first()
+        )
+        if not reply_to:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="要回复的楼中楼不存在"
+            )
+    
+    # 创建楼中楼
+    sub_reply = Reply(
+        thread_id=parent.thread_id,
+        author_id=current_user.id,
+        floor_num=None,  # 楼中楼没有楼层号
+        content=data.content,
+        parent_id=reply_id,
+        reply_to_id=data.reply_to_id
+    )
+    db.add(sub_reply)
+    
+    db.flush()  # 先 flush 获取 sub_reply.id
+    
+    # 创建通知：通知父楼层作者
+    create_notification(
+        db=db,
+        user_id=parent.author_id,
+        from_user_id=current_user.id,
+        type="sub_reply",
+        thread_id=parent.thread_id,
+        reply_id=sub_reply.id,
+        content_preview=data.content
+    )
+    
+    # 如果 reply_to 存在且不是父楼层作者，也通知被回复的人
+    if reply_to and reply_to.author_id != parent.author_id:
+        create_notification(
+            db=db,
+            user_id=reply_to.author_id,
+            from_user_id=current_user.id,
+            type="sub_reply",
+            thread_id=parent.thread_id,
+            reply_id=sub_reply.id,
+            content_preview=data.content
+        )
+    
+    # 解析 @ 并创建通知
+    mentioned_user_ids = parse_mentions(data.content, db)
+    notified_ids = {parent.author_id}
+    if reply_to:
+        notified_ids.add(reply_to.author_id)
+    
+    for user_id in mentioned_user_ids:
+        if user_id not in notified_ids:  # 避免重复通知
+            create_notification(
+                db=db,
+                user_id=user_id,
+                from_user_id=current_user.id,
+                type="mention",
+                thread_id=parent.thread_id,
+                reply_id=sub_reply.id,
+                content_preview=data.content
+            )
+    
+    db.commit()
+    db.refresh(sub_reply)
+    
+    return SubReplyResponse(
+        id=sub_reply.id,
+        author=sub_reply.author,
+        content=sub_reply.content,
+        reply_to=reply_to.author if reply_to else None,
+        created_at=sub_reply.created_at
+    )
+
+
+@router.delete("/replies/{reply_id}")
+async def delete_reply(
+    reply_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    删除回复（仅作者可删除）
+    """
+    reply = db.query(Reply).filter(Reply.id == reply_id).first()
+    
+    if not reply:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="回复不存在"
+        )
+    
+    if reply.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="只能删除自己的回复"
+        )
+    
+    # 如果是主楼层，删除所有楼中楼
+    if reply.parent_id is None:
+        db.query(Reply).filter(Reply.parent_id == reply_id).delete()
+    
+    db.delete(reply)
+    db.commit()
+    
+    return {"message": "回复已删除"}
