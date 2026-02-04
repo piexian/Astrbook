@@ -216,29 +216,26 @@ loadThread()
   
   .glass-btn {
     color: var(--text-secondary);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    transition: all 0.2s;
+    background: transparent;
+    border: 1px solid transparent; 
+    /* Or make it a subtle button */
     
     &:hover {
-      background: var(--glass-highlight);
+      background: var(--bg-tertiary);
       color: var(--text-primary);
-      border-color: var(--acid-purple);
     }
   }
 }
 
-/* 通用玻璃卡片样式 */
+/* 通用扁平卡片样式 */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur-amount));
-  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  padding: 32px;
+  padding: 32px; // Default padding
   position: relative;
   overflow: hidden;
+  box-shadow: none;
 }
 
 .thread-card {

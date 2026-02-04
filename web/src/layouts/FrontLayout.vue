@@ -11,13 +11,18 @@
           </router-link>
         </div>
         <div class="header-right">
+
+          <button class="theme-toggle-btn" @click="toggleTheme" :title="theme === 'dark' ? '切换到浅色模式' : '切换到深色模式'">
+            <el-icon v-if="theme === 'dark'"><Moon /></el-icon>
+            <el-icon v-else><Sunny /></el-icon>
+          </button>
+
           <!-- 未登录状态显示登录按钮 -->
           <template v-if="!isLoggedIn && !userLoading">
             <router-link to="/login" class="login-btn glass-card-hover">
               <span>登录</span>
             </router-link>
           </template>
-          
           <!-- 已登录状态显示用户下拉菜单 -->
           <el-dropdown
             v-else
@@ -64,8 +69,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { Moon, Sunny } from '@element-plus/icons-vue'
 import { getCurrentUser } from '../api'
 import { clearAllCache, getCurrentUserCache, setCurrentUserCache } from '../state/dataCache'
 import CachedAvatar from '../components/CachedAvatar.vue'
@@ -74,6 +80,7 @@ const router = useRouter()
 const currentUser = ref(null)
 const userLoading = ref(true)
 const keepAliveInclude = ['FrontHome', 'FrontProfile']
+const theme = ref('dark')
 
 // 判断是否已登录
 const isLoggedIn = computed(() => {
@@ -106,6 +113,13 @@ const loadUser = async () => {
   }
 }
 
+const toggleTheme = () => {
+  const newTheme = theme.value === 'dark' ? 'light' : 'dark'
+  theme.value = newTheme
+  document.documentElement.setAttribute('data-theme', newTheme)
+  localStorage.setItem('theme', newTheme)
+}
+
 const handleCommand = (command) => {
   if (command === 'logout') {
     localStorage.removeItem('user_token')
@@ -120,13 +134,17 @@ const handleCommand = (command) => {
   }
 }
 
-loadUser()
+onMounted(() => {
+  const savedTheme = localStorage.getItem('theme') || 'dark'
+  theme.value = savedTheme
+  document.documentElement.setAttribute('data-theme', savedTheme)
+  loadUser()
+})
 </script>
 
 <style lang="scss" scoped>
 .front-layout {
   min-height: 100vh;
-  /* 背景已在 global.scss 中通过 body 设置，这里设为透明 */
   background: transparent; 
 }
 
@@ -134,10 +152,8 @@ loadUser()
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(15, 15, 17, 0.6); // 深色半透明
-  backdrop-filter: blur(var(--blur-amount));
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
   padding-top: var(--safe-top);
   
   .container {
@@ -145,7 +161,7 @@ loadUser()
     margin: 0 auto;
     padding: 0 calc(var(--page-padding) + var(--safe-right)) 0
       calc(var(--page-padding) + var(--safe-left));
-    height: var(--header-height); // 稍微增高
+    height: var(--header-height);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -154,35 +170,56 @@ loadUser()
   .logo {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     text-decoration: none;
     
     .logo-icon-wrapper {
       width: 40px;
       height: 40px;
-      border-radius: 12px;
-      background: var(--surface-gradient);
-      box-shadow: var(--inner-glow), 0 4px 10px rgba(0,0,0,0.3);
+      border-radius: 8px;
+      background: transparent;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--glass-border);
       
       img {
-        width: 24px;
-        height: 24px;
-        filter: drop-shadow(0 0 5px var(--acid-purple));
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
     }
     
     .logo-text {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 700;
-      letter-spacing: -0.5px;
-      background: linear-gradient(90deg, #fff, var(--acid-blue));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      color: var(--text-primary);
+    }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .theme-toggle-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      font-size: 18px;
+            
+      &:hover {
+        background: var(--bg-tertiary);
+        color: var(--primary-color);
+      }
     }
   }
 }
@@ -214,20 +251,18 @@ loadUser()
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  padding: 6px 16px 6px 6px;
+  padding: 4px 12px 4px 4px;
   border-radius: 30px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  transition: all 0.3s ease;
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
   
   &:hover {
-    background: var(--glass-highlight);
-    box-shadow: 0 0 15px var(--acid-purple);
-    border-color: var(--acid-purple);
+    background: var(--bg-elevated);
   }
   
   .user-avatar {
-    border: 2px solid var(--acid-green);
+    border: 2px solid var(--primary-color);
   }
   
   .username {
@@ -240,7 +275,7 @@ loadUser()
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 2px solid var(--acid-green);
+    border: 2px solid var(--primary-color);
     background: var(--el-skeleton-color);
     position: relative;
     overflow: hidden;
@@ -273,8 +308,8 @@ loadUser()
 }
 
 .front-main {
-  padding-top: 40px;
-  padding-bottom: calc(60px + var(--safe-bottom));
+  padding-top: 24px;
+  padding-bottom: calc(40px + var(--safe-bottom));
   
   .container {
     max-width: 1200px;
@@ -293,12 +328,13 @@ loadUser()
   
   .front-header .logo .logo-text {
     display: block;
-    font-size: 20px;
+    font-size: 18px;
   }
   
   .user-info {
-    padding: 4px;
-    border-radius: 50%;
+    padding: 2px;
+    background: transparent;
+    border: none;
     
     .username {
       display: none;
@@ -307,43 +343,47 @@ loadUser()
     .skeleton-username {
       display: none;
     }
+    
+    .user-avatar {
+        border-width: 0;
+    }
   }
 }
 </style>
 
 <style lang="scss">
-// 覆盖 Element Plus 下拉菜单样式，使其符合毛玻璃风格
+// 覆盖 Element Plus 下拉菜单样式，使其符合扁平风格
 .el-dropdown__popper.glass-dropdown {
-  background: rgba(20, 20, 25, 0.8) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid var(--glass-border) !important;
+  background: var(--bg-elevated) !important;
+  backdrop-filter: none !important;
+  border: 1px solid var(--border-color) !important;
   box-shadow: var(--card-shadow) !important;
-  border-radius: 16px !important;
+  border-radius: 4px !important;
   
   .el-dropdown-menu {
     background: transparent !important;
-    padding: 8px !important;
+    padding: 4px !important;
   }
   
   .el-dropdown-menu__item {
-    color: var(--text-secondary) !important;
-    border-radius: 8px !important;
-    margin-bottom: 4px;
+    color: var(--text-primary) !important;
+    border-radius: 4px !important;
+    margin-bottom: 2px;
+    padding: 8px 16px !important;
     
     &:hover, &:focus {
-      background: var(--primary-color) !important;
-      color: #fff !important;
-      box-shadow: 0 0 10px var(--acid-purple);
+      background: var(--bg-tertiary) !important;
+      color: var(--text-primary) !important;
+      box-shadow: none !important;
     }
     
     &.el-dropdown-menu__item--divided {
-      border-top-color: var(--glass-border) !important;
+      border-top-color: var(--border-light) !important;
     }
   }
   
-  .el-popper__arrow::before {
-    background: rgba(20, 20, 25, 0.8) !important;
-    border: 1px solid var(--glass-border) !important;
+  .el-popper__arrow {
+    display: none !important;
   }
 }
 </style>

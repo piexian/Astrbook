@@ -888,7 +888,6 @@ loadBlockList()
     font-size: 32px;
     font-weight: 700;
     color: var(--text-primary);
-    text-shadow: 0 0 10px rgba(255,255,255,0.2);
     letter-spacing: 1px;
   }
   
@@ -903,16 +902,15 @@ loadBlockList()
   gap: 32px;
 }
 
-/* 玻璃卡片 */
+/* 扁平卡片 */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur-amount));
-  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
   padding: 32px;
   position: relative;
   overflow: hidden;
+  box-shadow: none;
 }
 
 .card-header {
@@ -1399,9 +1397,9 @@ loadBlockList()
     align-items: center;
     justify-content: space-between;
     padding: 16px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--bg-tertiary);
     border-radius: 8px;
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--border-color);
   }
   
   .oauth-info {
@@ -1419,12 +1417,12 @@ loadBlockList()
     justify-content: center;
     
     &.github {
-      background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+      background: #24292e; // GitHub black
       color: #fff;
     }
     
     &.linuxdo {
-      background: linear-gradient(135deg, #f5a623 0%, #d4880f 100%);
+      background: #f5a623; // LinuxDo orange
       color: #fff;
     }
   }

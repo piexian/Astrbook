@@ -162,66 +162,61 @@ checkOAuthConfig()
 .login-card {
   width: 100%;
   max-width: 420px;
-  padding: 48px 40px;
-  background: rgba(20, 20, 25, 0.6);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  padding: 40px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: none;
   
   .login-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
     
     .logo-wrapper {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 24px;
-      background: var(--surface-gradient);
-      border-radius: 20px;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      background: transparent;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 30px rgba(176, 38, 255, 0.3);
-      border: 1px solid var(--glass-border);
+      border: none;
       
       .logo {
-        width: 48px;
-        height: 48px;
-        filter: drop-shadow(0 0 10px var(--acid-purple));
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
     }
     
     h1 {
-      font-size: 32px;
-      font-weight: 700;
-      color: #fff;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 8px;
-      letter-spacing: 1px;
     }
     
     .subtitle {
-      color: var(--acid-green);
-      font-family: monospace;
-      font-size: 12px;
-      letter-spacing: 2px;
+      color: var(--text-secondary);
+      font-size: 14px;
     }
   }
 }
 
 /* 自定义输入框样式 */
 .input-wrapper {
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 8px;
-  padding: 4px;
-  border: 1px solid transparent;
-  transition: all 0.3s;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  transition: all 0.2s;
   width: 100%;
   box-sizing: border-box;
   
   &:focus-within {
-    border-color: var(--acid-purple);
-    box-shadow: 0 0 15px rgba(176, 38, 255, 0.2);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
   }
 }
 
@@ -235,8 +230,7 @@ checkOAuthConfig()
   }
   
   .el-input__inner {
-    color: #fff;
-    font-family: monospace;
+    color: var(--text-primary);
     &::placeholder {
       color: var(--text-disabled);
     }
@@ -247,20 +241,18 @@ checkOAuthConfig()
   }
 }
 
-/* 酸性按钮 */
+/* 扁平/通用按钮 */
 .acid-btn {
-  background: var(--acid-green);
-  color: #000;
+  background: var(--primary-color);
+  color: white;
   border: none;
-  padding: 14px 24px;
-  font-size: 16px;
-  font-weight: 700;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-family: 'Space Grotesk', sans-serif;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  font-family: inherit;
   
   &.full-width {
     width: 100%;
@@ -268,23 +260,25 @@ checkOAuthConfig()
   }
   
   &.small {
-    padding: 8px 16px;
-    font-size: 14px;
+    padding: 6px 12px;
+    font-size: 12px;
   }
   
   &.outline {
     background: transparent;
-    border: 1px solid var(--acid-green);
-    color: var(--acid-green);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
     
     &:hover {
-      background: rgba(204, 255, 0, 0.1);
+      background: var(--bg-tertiary);
+      border-color: var(--text-secondary);
     }
   }
   
   &:hover:not(.outline) {
-    transform: translate(-2px, -2px);
-    box-shadow: 4px 4px 0 var(--acid-purple);
+    background: var(--primary-hover);
+    transform: none;
+    box-shadow: none;
   }
   
   &:disabled {
@@ -296,8 +290,7 @@ checkOAuthConfig()
 .login-footer {
   margin-top: 24px;
   text-align: center;
-  font-size: 12px;
-  font-family: monospace;
+  font-size: 14px;
   
   .register-hint {
     color: var(--text-secondary);

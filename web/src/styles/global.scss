@@ -12,8 +12,8 @@ body {
   font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0f0f11; /* 深色背景作为酸性风格的基底 */
-  color: #e0e0e0;
+  background-color: var(--bg-primary); 
+  color: var(--text-primary);
   overflow-x: hidden;
   min-height: 100vh;
   min-height: 100dvh;
@@ -27,70 +27,119 @@ textarea {
   font: inherit;
 }
 
-// 酸性 + 毛玻璃 + 拟物 风格变量
+// 扁平化、现代化论坛风格变量
 :root {
   color-scheme: dark;
-  // 酸性色彩 (Acid Colors)
-  --acid-green: #ccff00;
-  --acid-purple: #b026ff;
-  --acid-pink: #ff00cc;
-  --acid-blue: #00ffff;
   
-  // 品牌色映射
-  --primary-color: var(--acid-purple);
-  --primary-hover: #c557ff;
+  // 基础背景色 (Modern Flat Dark)
+  --bg-primary: #121212;   // 页面背景
+  --bg-secondary: #1e1e1e; // 卡片/容器背景
+  --bg-tertiary: #2d2d2d;  // 悬停/输入框背景
+  --bg-elevated: #333333;  // 弹窗/下拉菜单
   
-  // 玻璃与材质 (Glass & Material)
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.2);
-  --glass-shadow: rgba(0, 0, 0, 0.5);
-  --blur-amount: 16px;
+  // 边框色
+  --border-color: #333333;
+  --border-light: #444444;
+
+  // 品牌色 (Modern Blue)
+  --primary-color: #3c96ca;
+  --primary-hover: #2288b7;
   
-  // 拟物/光影 (Neumorphism/Lighting)
-  --surface-gradient: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
-  --inner-glow: inset 0 0 20px rgba(255, 255, 255, 0.02);
+  // 兼容旧变量名称，映射到新扁平风格
+  --acid-green: #3c96ca; 
+  --acid-purple: #3c96ca;
+  --acid-pink: #3c96ca;
+  --acid-blue: #3c96ca;
+  
+  // 玻璃与材质 (Glass & Material) -> 扁平化映射
+  --glass-bg: var(--bg-secondary);
+  --glass-border: var(--border-color);
+  --glass-highlight: rgba(255, 255, 255, 0.05);
+  --glass-shadow: rgba(0, 0, 0, 0.3);
+  --blur-amount: 0px; // 去除模糊
+  
+  // 拟物/光影 -> 去除
+  --surface-gradient: var(--bg-secondary);
+  --inner-glow: none;
   
   // 文字颜色
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-disabled: rgba(255, 255, 255, 0.3);
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-disabled: #666666;
+  --text-tertiary: #808080;
   
-  // 阴影与圆角
-  --card-shadow: 
-    0 8px 32px 0 rgba(0, 0, 0, 0.37),
-    inset 1px 1px 0 0 rgba(255, 255, 255, 0.1),
-    inset -1px -1px 0 0 rgba(0, 0, 0, 0.2);
+  // 阴影与圆角 (Modern + Flat)
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
   
-  --card-radius: 24px; // 更大的圆角
-  --btn-radius: 12px;
+  --card-radius: 8px; // 论坛风格通常圆角较小
+  --btn-radius: 4px;
 
-  // Accent aliases (used by some pages)
-  --accent-purple: var(--acid-purple);
-  --accent-blue: var(--acid-blue);
-  --accent-cyan: var(--acid-blue);
+  // Accent aliases
+  --accent-purple: var(--primary-color);
+  --accent-blue: var(--primary-color);
+  --accent-cyan: var(--primary-color);
 
-  // Extra text tone
-  --text-tertiary: rgba(255, 255, 255, 0.55);
-
-  // Element Plus skeleton colors (match dark theme)
-  --el-skeleton-color: rgba(255, 255, 255, 0.06);
-  --el-skeleton-to-color: rgba(255, 255, 255, 0.14);
+  // Element Plus skeleton colors
+  --el-skeleton-color: var(--bg-tertiary);
+  --el-skeleton-to-color: var(--bg-elevated);
 
   // Motion tokens
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --duration-fast: 180ms;
-  --duration: 260ms;
-  --duration-leave: 120ms;
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --duration-leave: 100ms;
 
   // Layout tokens
   --page-padding: 24px;
-  --header-height: 72px;
+  --header-height: 64px;
   --safe-top: 0px;
   --safe-right: 0px;
   --safe-bottom: 0px;
   --safe-left: 0px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  // 基础背景色 (Modern Flat Light)
+  --bg-primary: #f5f7fa;   // 稍带灰的背景，不刺眼
+  --bg-secondary: #ffffff; // 卡片纯白
+  --bg-tertiary: #f0f2f5;  // 输入框/悬停
+  --bg-elevated: #ffffff;  // 弹窗
+  
+  // 边框色
+  --border-color: #e4e7ed;
+  --border-light: #EBEEF5;
+
+  // 品牌色 (保持一致或微调)
+  --primary-color: #3c96ca;
+  --primary-hover: #2288b7;
+  
+  --acid-green: #3c96ca; 
+  --acid-purple: #3c96ca;
+  --acid-pink: #3c96ca;
+  --acid-blue: #3c96ca;
+  
+  --glass-bg: var(--bg-secondary);
+  --glass-border: var(--border-color);
+  --glass-highlight: rgba(0, 0, 0, 0.02);
+  --glass-shadow: rgba(0, 0, 0, 0.05);
+  
+  --surface-gradient: var(--bg-secondary);
+  --inner-glow: none;
+  
+  // 文字颜色
+  --text-primary: #303133;
+  --text-secondary: #606266;
+  --text-disabled: #909399;
+  --text-tertiary: #a8abb2;
+
+  // 阴影
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+
+  --el-skeleton-color: #f0f2f5;
+  --el-skeleton-to-color: #e4e7ed;
 }
 
 // 全局背景动画容器 (用于放置流体光斑)
@@ -104,20 +153,7 @@ textarea {
 }
 
 #app::before {
-  content: '';
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: 
-    radial-gradient(circle at 50% 50%, rgba(176, 38, 255, 0.15), transparent 50%),
-    radial-gradient(circle at 20% 30%, rgba(204, 255, 0, 0.1), transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.1), transparent 40%);
-  z-index: -1;
-  filter: blur(60px);
-  animation: fluid-move 20s ease-in-out infinite alternate;
-  pointer-events: none;
+  display: none;
 }
 
 @keyframes fluid-move {
@@ -128,14 +164,13 @@ textarea {
 @media (max-width: 768px) {
   :root {
     --page-padding: 16px;
-    --header-height: 60px;
-    --blur-amount: 12px;
-    --card-radius: 18px;
+    --header-height: 56px;
+    --blur-amount: 0px;
+    --card-radius: 6px;
   }
 
   #app::before {
-    filter: blur(46px);
-    animation: none;
+    display: none;
   }
 }
 
@@ -148,10 +183,10 @@ textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--bg-tertiary);
   border-radius: 4px;
   &:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--border-light);
   }
 }
 
@@ -163,49 +198,35 @@ textarea {
 a {
   text-decoration: none;
   color: var(--primary-color);
-  transition: color 0.2s;
+  transition: color 0.15s;
   
   &:hover {
     color: var(--primary-hover);
+    text-decoration: underline; // Forum style often has underline
   }
 }
 
 // 卡片基础样式
 .card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: var(--card-radius);
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+  // box-shadow: var(--card-shadow);
   padding: 24px;
-  transition: box-shadow 0.2s;
-  border: 1px solid #dadce0;
-  box-shadow: none; // Google 风格倾向于用边框或者极淡的阴影
-  
-  &:hover {
-    // box-shadow: var(--card-hover-shadow);
-  }
+  border: 1px solid var(--border-color);
+  box-shadow: none; 
 }
 
-// 渐变卡片 (调整为纯色或更符合 Material 的样式)
+// 渐变卡片 (调整为纯色)
 .gradient-card {
   border-radius: var(--card-radius);
   padding: 24px;
   color: white;
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   
-  &.purple {
-    background: #1a73e8;
-  }
-  
-  &.blue {
-    background: #4285f4;
-  }
-  
-  &.green {
-    background: #34a853;
-  }
-  
-  &.pink {
-    background: #ea4335;
+  &.purple, &.blue, &.green, &.pink {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
   }
 }
 
@@ -301,22 +322,19 @@ a {
   }
 }
 
-// Acid Style Select Dropdown
-// 注意：el-select 的下拉菜单是 teleport 到 body 的，需要使用全局样式
+// Modern Flat Select Dropdown
 .acid-select-dropdown.el-popper.el-select__popper {
-  background: rgba(30, 30, 35, 0.95) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-  border-radius: 16px !important;
+  background: var(--bg-elevated) !important;
+  border: 1px solid var(--border-color) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; // shadow-md
+  border-radius: 4px !important;
   overflow: hidden;
-  padding: 6px !important;
+  padding: 4px !important;
   
   .el-popper__arrow {
-    display: none !important;
+    display: none !important; // Hide arrow for cleaner look
   }
   
   .el-select-dropdown {
@@ -334,33 +352,44 @@ a {
   }
   
   .el-select-dropdown__item {
-    color: var(--text-secondary) !important;
+    color: var(--text-primary) !important;
     font-size: 14px !important;
-    padding: 8px 16px !important;
+    padding: 8px 12px !important;
     height: auto !important;
     line-height: 1.5 !important;
-    margin: 2px 0 !important;
-    border-radius: 8px !important;
-    transition: all 0.2s ease !important;
+    margin: 0 !important;
+    border-radius: 2px !important;
+    transition: background-color 0.1s ease !important;
     background: transparent !important;
     
     // hover 样式
     &:hover, &.hover, &.is-hovering {
-      background-color: rgba(255, 255, 255, 0.1) !important;
+      background-color: var(--bg-tertiary) !important;
       color: var(--text-primary) !important;
       box-shadow: none !important;
     }
     
     // 选中样式
     &.is-selected, &.selected {
-      color: #000 !important;
-      font-weight: 600 !important;
-      background-color: var(--acid-green) !important;
-      box-shadow: 0 0 15px rgba(204, 255, 0, 0.3) !important;
+      color: var(--primary-color) !important;
+      font-weight: 500 !important;
+      background-color: transparent !important;
+      position: relative;
+      
+      &::after {
+        content: ""; 
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 6px;
+        height: 6px;
+        background-color: var(--primary-color);
+        border-radius: 50%;
+      }
       
       &:hover {
-        background-color: var(--acid-green) !important;
-        color: #000 !important;
+        background-color: var(--bg-tertiary) !important;
       }
     }
   }

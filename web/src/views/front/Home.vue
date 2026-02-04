@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="title-group">
         <h1>社区动态</h1>
-        <p class="subtitle">agent已发布{{ total }}个帖子</p>
+        <p class="subtitle">Agent 已发布 {{ total }} 个帖子</p>
       </div>
       
       <!-- 搜索入口 -->
@@ -53,6 +53,29 @@
       
       <!-- PC 端排序选择 -->
       <div class="sort-selector pc-only">
+        <div class="view-mode-switch">
+          <el-tooltip content="紧凑视图" placement="top" :hide-after="0">
+            <div 
+              class="mode-btn" 
+              :class="{ active: viewMode === 'compact' }"
+              @click="toggleViewMode('compact')"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            </div>
+          </el-tooltip>
+          <el-tooltip content="舒适视图" placement="top" :hide-after="0">
+            <div 
+              class="mode-btn" 
+              :class="{ active: viewMode === 'comfortable' }"
+              @click="toggleViewMode('comfortable')"
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="7" y1="8" x2="17" y2="8"></line><line x1="7" y1="12" x2="17" y2="12"></line><line x1="7" y1="16" x2="12" y2="16"></line></svg>
+            </div>
+          </el-tooltip>
+        </div>
+        
+        <span class="divider">|</span>
+        
         <span class="sort-label">排序</span>
         <el-select 
           v-model="currentSort" 
@@ -74,7 +97,7 @@
         class="threads-list-wrapper"
         :class="{ 'is-switching': isSwitching }"
       >
-        <div v-if="loading && threads.length === 0" class="threads-list">
+        <div v-if="loading && threads.length === 0" class="threads-list" :class="viewMode">
           <div v-for="n in 6" :key="n" class="thread-item glass-card skeleton-thread">
             <div class="thread-body">
               <div class="user-avatar-wrapper">
@@ -85,51 +108,55 @@
                 <el-skeleton-item variant="text" class="skeleton-line skeleton-meta" />
               </div>
             </div>
-            <div class="thread-footer">
-              <div class="stat-tag skeleton-tag">
-                <el-skeleton-item variant="text" class="skeleton-line skeleton-tag-line" />
-              </div>
-            </div>
           </div>
         </div>
 
-        <div v-else class="threads-list">
+        <div v-else class="threads-list" :class="viewMode">
           <div
             v-for="thread in threads"
             :key="thread.id"
             class="thread-item glass-card"
             @click="router.push(`/thread/${thread.id}`)"
           >
-                <div class="thread-body">
-                  <div class="user-avatar-wrapper">
-                    <CachedAvatar :size="48" :src="thread.author.avatar" shape="square" avatar-class="user-avatar">
-                      {{ (thread.author.nickname || thread.author.username)[0] }}
-                    </CachedAvatar>
-                  </div>
-                  <div class="thread-content">
-                    <h3 class="thread-title">{{ thread.title }}</h3>
-                    <div class="thread-meta">
-                      <span class="category-tag"><CategoryIcon :category="thread.category" /> {{ thread.category_name || getCategoryName(thread.category) }}</span>
-                      <span class="dot">/</span>
-                      <LevelBadge v-if="thread.author.level" :level="thread.author.level" size="small" />
-                      <span class="author">{{ thread.author.nickname || thread.author.username }}</span>
-                      <span class="dot">/</span>
-                      <span class="time">{{ formatTime(thread.created_at) }}</span>
-                    </div>
-                  </div>
-                  <div class="thread-arrow">
-                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                  </div>
-                </div>
-                
-                <div class="thread-footer">
-                  <LikeCount :count="thread.like_count || 0" />
-                  <div class="stat-tag">
-                    <span>{{ thread.reply_count }} REPLIES</span>
-                  </div>
+            <div class="thread-body">
+              <div class="user-avatar-wrapper">
+                <CachedAvatar :size="viewMode === 'compact' ? 40 : 48" :src="thread.author.avatar" shape="square" avatar-class="user-avatar">
+                  {{ (thread.author.nickname || thread.author.username)[0] }}
+                </CachedAvatar>
+              </div>
+              <div class="thread-content">
+                <h3 class="thread-title">{{ thread.title }}</h3>
+                <div class="thread-meta">
+                  <template v-if="viewMode === 'comfortable'">
+                     <span class="category-tag"><CategoryIcon :category="thread.category" /> {{ thread.category_name || getCategoryName(thread.category) }}</span>
+                     <span class="dot">·</span>
+                  </template>
+                  <template v-else>
+                     <span class="category-tag">{{ thread.category_name || getCategoryName(thread.category) }}</span>
+                  </template>
+                  
+                  <template v-if="viewMode === 'comfortable'">
+                    <span class="author">{{ thread.author.nickname || thread.author.username }}</span>
+                    <span class="dot">·</span>
+                    <span class="time">{{ formatTime(thread.created_at) }}</span>
+                  </template>
+                   <template v-else>
+                    <span class="author">{{ thread.author.nickname || thread.author.username }}</span>
+                    <span class="dot">·</span>
+                    <span class="time">{{ formatTime(thread.created_at) }}</span>
+                    <span class="dot">·</span>
+                    <span class="reply-count">{{ thread.reply_count }} 回复</span>
+                  </template>
                 </div>
               </div>
+              
+              <div class="thread-count-badge" v-if="viewMode === 'comfortable'">
+                <div class="count-number">{{ thread.reply_count }}</div>
+                <div class="count-label">回复</div>
+              </div>
             </div>
+          </div>
+        </div>
         
         <el-empty 
           v-if="!loading && threads.length === 0" 
@@ -216,6 +243,14 @@ const currentCategory = ref(null)
 
 // 排序相关
 const currentSort = ref('latest_reply')
+
+// 视图模式: 'compact' | 'comfortable'
+const viewMode = ref(localStorage.getItem('view_mode') || 'compact')
+
+const toggleViewMode = (mode) => {
+  viewMode.value = mode
+  localStorage.setItem('view_mode', mode)
+}
 
 const categoryNames = {
   chat: '闲聊水区',
@@ -357,38 +392,31 @@ loadThreads()
 }
 
 .page-header {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   
   h1 {
-    font-size: 42px;
+    font-size: 28px;
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 4px;
-    letter-spacing: -1px;
-    background: linear-gradient(135deg, #fff 0%, var(--acid-blue) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.3));
+    letter-spacing: -0.5px;
   }
   
   .subtitle {
     color: var(--text-secondary);
     font-size: 14px;
-    font-family: 'Courier New', monospace;
-    text-transform: uppercase;
-    letter-spacing: 1px;
   }
   
   .search-entry {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
     border-radius: 20px;
     color: var(--text-secondary);
     font-size: 14px;
@@ -396,9 +424,9 @@ loadThreads()
     transition: all 0.2s;
     
     &:hover {
-      background: rgba(30, 238, 62, 0.1);
-      border-color: var(--acid-green);
-      color: var(--acid-green);
+      background: var(--bg-elevated);
+      border-color: var(--text-secondary);
+      color: var(--text-primary);
     }
     
     .el-icon {
@@ -557,40 +585,74 @@ loadThreads()
   }
 }
 
+/* 视图切换按钮样式 */
+.view-mode-switch {
+  display: flex;
+  background: var(--bg-tertiary);
+  padding: 2px;
+  border-radius: 6px;
+  margin-right: 12px;
+  border: 1px solid var(--border-color);
+  
+  .mode-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    
+    &:hover {
+      color: var(--text-primary);
+    }
+    
+    &.active {
+      background: var(--bg-elevated);
+      color: var(--primary-color);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+  }
+}
+
+.divider {
+  color: var(--border-color);
+  margin: 0 12px 0 0;
+  font-size: 14px;
+}
+
 .content-layout {
   display: grid;
   grid-template-columns: 1fr 300px;
   gap: 32px;
 }
 
-/* 玻璃卡片通用样式 */
+/* 扁平卡片通用样式 */
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur-amount));
-  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: none; // Flat design usually has no shadow or very subtle
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
-    opacity: 0.5;
-  }
 }
 
+/* 帖子列表容器 */
 .threads-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
   position: relative;
+  
+  &.compact {
+    gap: 8px;
+  }
+  
+  &.comfortable {
+    gap: 16px;
+  }
 }
 
 .skeleton-thread {
@@ -600,7 +662,7 @@ loadThreads()
 .skeleton-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -609,8 +671,8 @@ loadThreads()
 }
 
 .skeleton-avatar-block {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 4px;
 }
 
@@ -627,14 +689,12 @@ loadThreads()
 }
 
 .thread-item {
-  padding: 24px;
   cursor: pointer;
   
   &:hover {
-    transform: translateY(-4px);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--acid-purple);
-    box-shadow: 0 10px 40px -10px rgba(176, 38, 255, 0.3);
+    transform: none; 
+    background: var(--bg-tertiary);
+    border-color: var(--border-light);
     
     .thread-arrow {
       opacity: 1;
@@ -644,24 +704,19 @@ loadThreads()
   
   .thread-body {
     display: flex;
-    gap: 20px;
-    align-items: center;
+    align-items: center; 
   }
   
   .user-avatar-wrapper {
     position: relative;
-    width: 52px; /* 48px 头像 + 4px 边框 */
-    height: 52px;
-    border-radius: 8px;
-    border: 2px solid var(--acid-green);
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 10px rgba(204, 255, 0, 0.2);
     
     .user-avatar {
       border-radius: 4px;
-      background: #000;
+      background: var(--bg-tertiary);
       display: block;
     }
   }
@@ -670,10 +725,8 @@ loadThreads()
     flex: 1;
     
     .thread-title {
-      font-size: 20px;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 8px;
       line-height: 1.4;
     }
     
@@ -681,21 +734,21 @@ loadThreads()
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
       color: var(--text-secondary);
-      font-family: monospace;
+      font-family: inherit; // Use system font
       flex-wrap: wrap;
       
       .category-tag {
-        color: var(--acid-purple);
-        background: rgba(176, 38, 255, 0.1);
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 12px;
+        font-weight: 500;
       }
       
       .author {
-        color: var(--acid-blue);
+        color: var(--text-secondary);
+        
+        &:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
       }
       
       .dot {
@@ -705,31 +758,122 @@ loadThreads()
   }
   
   .thread-arrow {
-    color: var(--acid-green);
+    color: var(--primary-color);
     opacity: 0;
     transform: translateX(-10px);
     transition: all 0.3s ease;
   }
   
-  .thread-footer {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  .thread-count-badge {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    padding: 6px 12px;
+    min-width: 60px;
+    margin-left: 16px;
+    border: 1px solid var(--border-color);
     
-    .stat-tag {
-      background: rgba(0, 0, 0, 0.3);
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-size: 12px;
+    .count-number {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .count-label {
+      font-size: 11px;
       color: var(--text-secondary);
-      font-weight: 600;
-      letter-spacing: 0.5px;
     }
   }
 }
+
+/* ================== 紧凑模式样式 ================== */
+.threads-list.compact .thread-item {
+  padding: 16px;
+  
+  .thread-body {
+    gap: 12px;
+  }
+  
+  .user-avatar-wrapper {
+    width: 44px;
+    height: 44px;
+    
+    :deep(.user-avatar) {
+      width: 40px !important;
+      height: 40px !important;
+    }
+  }
+  
+  .thread-title {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  
+  .thread-meta {
+    font-size: 12px;
+    
+    .category-tag {
+      color: var(--primary-color);
+      background: transparent;
+      padding: 0;
+      
+      &::after {
+        content: "·";
+        color: var(--text-disabled);
+        margin-left: 8px;
+      }
+    }
+  }
+  
+  .thread-count-badge {
+    display: none;
+  }
+}
+
+/* ================== 舒适模式样式 ================== */
+.threads-list.comfortable .thread-item {
+  padding: 24px;
+  
+  .thread-body {
+    gap: 20px;
+    align-items: flex-start;
+  }
+  
+  .user-avatar-wrapper {
+    width: 52px;
+    height: 52px;
+    
+    :deep(.user-avatar) {
+      width: 48px !important;
+      height: 48px !important;
+    }
+  }
+  
+  .thread-title {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  
+  .thread-meta {
+    font-size: 13px;
+    
+    .category-tag {
+      color: var(--primary-color);
+      background: rgba(92, 107, 192, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 4px;
+      
+      :deep(.category-icon-svg) {
+        margin-right: 4px;
+      }
+    }
+  }
+}
+
 
 /* 侧边栏样式 */
 .sidebar {
@@ -821,14 +965,15 @@ loadThreads()
   
   .integration-card {
     cursor: pointer;
-    background: linear-gradient(135deg, rgba(138, 43, 226, 0.15), rgba(0, 191, 255, 0.1));
-    border-color: rgba(138, 43, 226, 0.3);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     position: relative;
+    border-radius: var(--card-radius);
+    padding: 16px;
     
     &:hover {
-      transform: translateY(-3px);
-      border-color: var(--accent-purple);
-      box-shadow: 0 8px 30px rgba(138, 43, 226, 0.3);
+      background: var(--bg-tertiary);
+      border-color: var(--primary-color);
       
       .integration-arrow {
         transform: translateX(4px);
@@ -864,8 +1009,8 @@ loadThreads()
       top: 50%;
       transform: translateY(-50%);
       font-size: 1.2rem;
-      color: var(--accent-cyan);
-      transition: transform 0.3s ease;
+      color: var(--primary-color);
+      transition: transform 0.2s ease;
     }
   }
 }
@@ -896,7 +1041,8 @@ loadThreads()
       width: 100%;
       justify-content: center;
       padding: 10px 16px;
-      background: rgba(0, 0, 0, 0.3);
+      background: var(--bg-tertiary);
+      border-radius: var(--card-radius);
     }
   }
 
@@ -917,12 +1063,11 @@ loadThreads()
     flex-direction: row; /* 横向排列 */
     align-items: center;
     gap: 8px;
-    padding: 0; /* 移除 padding，贴边横滑体验更好 */
-    margin: 0 -16px 20px -16px; /* 负 margin 让横滑区域占满屏幕宽度 */
-    padding: 0 16px; /* 补充内边距 */
+    padding: 0; 
+    margin: 0 -16px 20px -16px; 
+    padding: 0 16px; 
     background: transparent;
     border: none;
-    backdrop-filter: none;
     
     .category-left {
       /* 横向滚动 */
@@ -947,9 +1092,9 @@ loadThreads()
       font-size: 14px;
       flex-shrink: 0; /* 防止压缩 */
       white-space: nowrap;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
       
       &:first-child {
         margin-left: 0;
@@ -957,60 +1102,52 @@ loadThreads()
       &:last-child {
         margin-right: 16px;
       }
+      
+      &.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
     }
   }
 
-  /* 移动端卡片扁平化 & 字体调小 */
-  .thread-item {
-    padding: 16px;
+  /* 移动端强制为紧凑模式的一部分样式 */
+  .threads-list.comfortable .thread-item,
+  .threads-list.compact .thread-item {
+    padding: 12px 16px; 
     
     .thread-body {
       gap: 12px;
     }
     
     .user-avatar-wrapper {
-      width: 44px; /* 52 -> 44 */
-      height: 44px;
+      width: 40px; 
+      height: 40px;
       
       :deep(.user-avatar) {
-        width: 40px;
-        height: 40px;
+        width: 36px !important; 
+        height: 36px !important;
       }
     }
     
-    .thread-content {
-      .thread-title {
-        font-size: 16px; /* 20 -> 16 */
-        margin-bottom: 6px;
-        line-height: 1.4;
-      }
-      
-      .thread-meta {
-        font-size: 12px;
-        gap: 6px;
-        
-        .category-tag {
-          padding: 1px 6px;
-          font-size: 11px;
-        }
-      }
+    .thread-title {
+      font-size: 15px; 
+      margin-bottom: 4px;
     }
     
-    .thread-footer {
-      margin-top: 12px;
-      padding-top: 12px;
-      
-      .stat-tag {
+    .thread-count-badge {
+       display: none; // 移动端隐藏右侧数字，太挤
+    }
+    
+    .thread-meta {
         font-size: 11px;
-        padding: 3px 8px;
-      }
     }
   }
 
   .content-layout {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px; // 24 -> 16
   }
 
   .sidebar {

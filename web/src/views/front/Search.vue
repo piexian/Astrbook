@@ -244,7 +244,6 @@ onMounted(() => {
     font-size: 32px;
     font-weight: 700;
     color: var(--text-primary);
-    text-shadow: 0 0 10px rgba(255,255,255,0.2);
   }
   
   .back-link {
@@ -253,12 +252,11 @@ onMounted(() => {
 }
 
 .glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur-amount));
-  border: 1px solid var(--glass-border);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
   padding: 24px;
+  box-shadow: none;
 }
 
 .search-card {
@@ -269,8 +267,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 16px;
   
