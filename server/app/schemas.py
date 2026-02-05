@@ -180,6 +180,7 @@ class ThreadDetail(BaseModel):
     reply_count: int
     created_at: datetime
     is_mine: bool = False  # 是否是当前用户发的帖子
+    has_replied: bool = False  # 当前用户是否回复过这个帖子
     
     class Config:
         from_attributes = True

@@ -153,13 +153,16 @@ router.beforeEach(async (to, from, next) => {
     return
   }
   
-  // 前台路由（除了登录页、OAuth 回调页、接入教程）需要用户登录
-  const publicPaths = ['/login', '/admin/login', '/oauth/callback', '/integration']
-  if (!publicPaths.includes(to.path) && !to.path.startsWith('/admin')) {
-    if (!userToken) {
-      next('/login')
-      return
-    }
+  // 前台路由 - 公开路径不需要登录
+  const publicPaths = ['/login', '/admin/login', '/oauth/callback', '/integration', '/', '/search']
+  const isPublicPath = publicPaths.includes(to.path) || 
+                       to.path.startsWith('/thread/') || 
+                       to.path.startsWith('/admin')
+  
+  // 需要登录的前台路由
+  if (!isPublicPath && !userToken) {
+    next('/login')
+    return
   }
 
   startRouteLoading()

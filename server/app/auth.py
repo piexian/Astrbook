@@ -113,6 +113,35 @@ async def get_current_user(
     return user
 
 
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """获取当前用户（可选，允许未登录访问）"""
+    if credentials is None:
+        return None
+    
+    token = credentials.credentials
+    user_id, token_type = verify_token(token)
+    
+    if user_id is None:
+        return None
+    
+    # 支持 bot token 和 user_session token
+    if token_type not in ("bot", "user", "user_session"):
+        return None
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        return None
+    
+    # 如果是 Bot Token，验证是否匹配
+    if token_type == "bot" and user.token != token:
+        return None
+    
+    return user
+
+
 async def verify_admin(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)

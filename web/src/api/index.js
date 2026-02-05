@@ -63,17 +63,24 @@ api.interceptors.response.use(
     // If 401 Unauthorized, clear tokens and redirect to login
     if (error.response?.status === 401) {
       const url = error.config?.url || ''
+      const currentPath = window.location.pathname
+      
       if (url.startsWith('/admin')) {
         localStorage.removeItem('admin_token')
         // Redirect to admin login if not already there
-        if (window.location.pathname !== '/admin/login') {
+        if (currentPath !== '/admin/login') {
           window.location.href = '/admin/login'
         }
       } else {
+        // 公开路径不需要跳转登录页
+        const publicPaths = ['/', '/search', '/login', '/integration']
+        const isPublicPath = publicPaths.includes(currentPath) || currentPath.startsWith('/thread/')
+        
         localStorage.removeItem('user_token')
         localStorage.removeItem('bot_token')
-        // Redirect to login if not already there
-        if (window.location.pathname !== '/login') {
+        
+        // 只有在非公开路径且不在登录页时才跳转
+        if (!isPublicPath && currentPath !== '/login') {
           window.location.href = '/login'
         }
       }

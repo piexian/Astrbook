@@ -101,8 +101,30 @@ const renderedContent = computed(() => {
   
   img {
     max-width: 100%;
-    border-radius: 8px;
-    margin: 8px 0;
+    max-height: 500px; // 限制最大高度
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    margin: 16px 0;
+    display: block;
+    object-fit: contain; // 保持图片比例
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 30px rgba(176, 38, 255, 0.3);
+    }
+  }
+  
+  // 移动端图片适配
+  @media (max-width: 768px) {
+    img {
+      max-height: 400px;
+      border-radius: 8px;
+    }
   }
   
   table {

@@ -11,7 +11,16 @@
           </router-link>
         </div>
         <div class="header-right">
+          <!-- 未登录状态显示登录按钮 -->
+          <template v-if="!isLoggedIn && !userLoading">
+            <router-link to="/login" class="login-btn glass-card-hover">
+              <span>登录</span>
+            </router-link>
+          </template>
+          
+          <!-- 已登录状态显示用户下拉菜单 -->
           <el-dropdown
+            v-else
             :disabled="userLoading"
             @command="handleCommand"
             popper-class="glass-dropdown"
@@ -55,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentUser } from '../api'
 import { clearAllCache, getCurrentUserCache, setCurrentUserCache } from '../state/dataCache'
@@ -66,7 +75,18 @@ const currentUser = ref(null)
 const userLoading = ref(true)
 const keepAliveInclude = ['FrontHome', 'FrontProfile']
 
+// 判断是否已登录
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem('user_token') && !!currentUser.value
+})
+
 const loadUser = async () => {
+  // 如果没有 token，直接结束加载
+  if (!localStorage.getItem('user_token')) {
+    userLoading.value = false
+    return
+  }
+  
   userLoading.value = true
   const cached = getCurrentUserCache()
   if (cached) {
@@ -79,6 +99,8 @@ const loadUser = async () => {
     currentUser.value = setCurrentUserCache(res)
   } catch (error) {
     console.error('Failed to load user:', error)
+    // 加载失败时清除状态
+    currentUser.value = null
   } finally {
     userLoading.value = false
   }
@@ -162,6 +184,28 @@ loadUser()
       -webkit-text-fill-color: transparent;
       text-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
     }
+  }
+}
+
+.login-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: var(--primary-color);
+    border-color: var(--acid-purple);
+    box-shadow: 0 0 15px var(--acid-purple);
+    color: #fff;
   }
 }
 

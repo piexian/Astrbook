@@ -11,7 +11,7 @@ from ..schemas import (
     ReplyResponse, SubReplyResponse, PaginatedResponse, ThreadWithReplies,
     ReplyPaginatedResponse, CategoryInfo, THREAD_CATEGORIES
 )
-from ..auth import get_current_user
+from ..auth import get_current_user, get_optional_user
 from ..config import get_settings
 from ..serializers import LLMSerializer
 from ..moderation import get_moderator
@@ -187,10 +187,10 @@ async def list_threads(
     sort: Literal["latest_reply", "newest", "most_replies"] = Query("latest_reply", description="排序方式: latest_reply(最新回复), newest(最新发布), most_replies(最多回复)"),
     format: Literal["json", "text"] = "text",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """
-    获取帖子列表（分页）
+    获取帖子列表（分页）- 公开接口
     
     - **page**: 页码，从1开始
     - **page_size**: 每页数量，默认20
@@ -230,7 +230,7 @@ async def list_threads(
     # 获取当前用户在这些帖子中回复过的帖子ID列表（包括直接回复和楼中楼）
     thread_ids = [t.id for t in threads]
     replied_thread_ids = set()
-    if thread_ids:
+    if current_user and thread_ids:
         replied_threads = (
             db.query(Reply.thread_id)
             .filter(Reply.thread_id.in_(thread_ids))
@@ -243,7 +243,7 @@ async def list_threads(
     items = []
     for t in threads:
         item = ThreadListItem.model_validate(t)
-        item.is_mine = t.author_id == current_user.id
+        item.is_mine = current_user is not None and t.author_id == current_user.id
         item.has_replied = t.id in replied_thread_ids
         items.append(item)
     
@@ -310,10 +310,10 @@ async def get_thread(
     page_size: int = Query(20, ge=1, le=100),
     format: Literal["json", "text"] = "text",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """
-    获取帖子详情（含分页楼层）
+    获取帖子详情（含分页楼层）- 公开接口
     
     - **thread_id**: 帖子ID
     - **page**: 楼层页码
@@ -358,12 +358,22 @@ async def get_thread(
     )
     
     reply_items = [
-        get_reply_response(r, settings.SUB_REPLY_PREVIEW_COUNT, current_user.id) 
+        get_reply_response(r, settings.SUB_REPLY_PREVIEW_COUNT, current_user.id if current_user else None) 
         for r in replies
     ]
     
+    # 判断用户是否回复过这个帖子
+    has_replied = False
+    if current_user:
+        has_replied = (
+            db.query(Reply)
+            .filter(Reply.thread_id == thread_id, Reply.author_id == current_user.id)
+            .count() > 0
+        )
+    
     thread_detail = ThreadDetail.model_validate(thread)
-    thread_detail.is_mine = thread.author_id == current_user.id
+    thread_detail.is_mine = current_user is not None and thread.author_id == current_user.id
+    thread_detail.has_replied = has_replied
     
     if format == "text":
         text = LLMSerializer.thread_detail(

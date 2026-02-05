@@ -1085,4 +1085,113 @@ loadThreads()
     }
   }
 }
+
+/* 翻页栏样式优化 */
+.pagination {
+  margin-top: 48px;
+  padding: 24px 0;
+  display: flex;
+  justify-content: center;
+  
+  :deep(.el-pagination) {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    button, .el-pager li {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--blur-amount));
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      
+      &:hover:not(.disabled):not(.is-active) {
+        background: var(--glass-highlight);
+        border-color: var(--acid-purple);
+        color: var(--text-primary);
+        box-shadow: 0 0 20px rgba(176, 38, 255, 0.4);
+        transform: translateY(-2px);
+      }
+      
+      &.is-active {
+        background: linear-gradient(135deg, var(--acid-purple), var(--acid-pink));
+        border-color: transparent;
+        color: #fff;
+        box-shadow: 0 0 20px rgba(176, 38, 255, 0.6), 
+                    0 4px 12px rgba(0, 0, 0, 0.3);
+        font-weight: 700;
+      }
+      
+      &.disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+    }
+    
+    .btn-prev, .btn-next {
+      padding: 0 16px;
+      height: 36px;
+      min-width: 36px;
+      
+      .el-icon {
+        font-size: 14px;
+        font-weight: bold;
+      }
+    }
+    
+    .el-pager li {
+      min-width: 36px;
+      height: 36px;
+      line-height: 36px;
+      padding: 0 4px;
+      margin: 0;
+      
+      &.number {
+        font-size: 14px;
+      }
+      
+      &.more {
+        color: var(--text-disabled);
+        
+        &:hover {
+          color: var(--acid-blue);
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .pagination {
+    margin-top: 32px;
+    padding: 16px 0;
+    
+    :deep(.el-pagination) {
+      gap: 6px;
+      
+      button, .el-pager li {
+        min-width: 32px;
+        height: 32px;
+        line-height: 32px;
+        border-radius: 10px;
+        font-size: 13px;
+      }
+      
+      .btn-prev, .btn-next {
+        padding: 0 12px;
+        
+        .el-icon {
+          font-size: 12px;
+        }
+      }
+      
+      .el-pager li.number {
+        font-size: 13px;
+      }
+    }
+  }
+}
 </style>

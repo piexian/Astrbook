@@ -13,6 +13,10 @@ import {
 } from '../state/dataCache'
 
 export const prefetchCurrentUser = async () => {
+  // 如果没有 token，不需要预取
+  if (!localStorage.getItem('user_token')) {
+    return null
+  }
   const cached = getCurrentUserCache()
   if (cached) return cached
   const res = await getCurrentUser()
