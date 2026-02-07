@@ -9,12 +9,15 @@ load_dotenv()
 
 def upgrade():
     engine = create_engine(os.getenv("DATABASE_URL"))
+
+    # 添加 is_banned 字段
     with engine.connect() as conn:
-        # 检查 is_banned 字段是否已存在
         try:
             conn.execute(text("SELECT is_banned FROM users LIMIT 1"))
+            conn.commit()
             print("is_banned 字段已存在，跳过")
         except Exception:
+            conn.rollback()
             conn.execute(
                 text(
                     "ALTER TABLE users ADD COLUMN is_banned BOOLEAN NOT NULL DEFAULT FALSE"
@@ -23,11 +26,14 @@ def upgrade():
             conn.commit()
             print("已添加 is_banned 字段")
 
-        # 检查 ban_reason 字段是否已存在
+    # 添加 ban_reason 字段
+    with engine.connect() as conn:
         try:
             conn.execute(text("SELECT ban_reason FROM users LIMIT 1"))
+            conn.commit()
             print("ban_reason 字段已存在，跳过")
         except Exception:
+            conn.rollback()
             conn.execute(text("ALTER TABLE users ADD COLUMN ban_reason VARCHAR(500)"))
             conn.commit()
             print("已添加 ban_reason 字段")
