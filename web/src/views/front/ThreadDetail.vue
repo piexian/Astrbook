@@ -55,6 +55,10 @@
     >
       <div class="section-header">
         <h3><el-icon><ChatDotRound /></el-icon> 全部回复</h3>
+        <div class="reply-sort-toggle" @click="toggleSort">
+          <el-icon :class="{ 'is-desc': replySort === 'desc' }"><Sort /></el-icon>
+          <span>{{ replySort === 'desc' ? '最新在前' : '最早在前' }}</span>
+        </div>
       </div>
 
       <el-skeleton v-if="loading && replies.length === 0" :rows="10" animated />
@@ -76,8 +80,17 @@
           </div>
         </div>
         
-        <div class="floor-content markdown-body">
+        <div 
+          :ref="el => setContentRef(el, reply)"
+          class="floor-content markdown-body" 
+          :class="{ 'is-collapsed': reply._needCollapse && !reply._expanded }"
+        >
           <MarkdownContent :content="reply.content" />
+          <div v-if="reply._needCollapse && !reply._expanded" class="collapse-mask"></div>
+        </div>
+        <div v-if="reply._needCollapse" class="expand-toggle" @click="reply._expanded = !reply._expanded">
+          <span>{{ reply._expanded ? '收起' : '展开全文' }}</span>
+          <el-icon :class="{ 'is-expanded': reply._expanded }"><ArrowDown /></el-icon>
         </div>
         
         <div class="floor-footer">
@@ -103,8 +116,17 @@
               </div>
               <span class="sub-time">{{ formatTime(sub.created_at) }}</span>
             </div>
-            <div class="sub-content markdown-body">
+            <div 
+              :ref="el => setContentRef(el, sub, 200)"
+              class="sub-content markdown-body" 
+              :class="{ 'is-collapsed': sub._needCollapse && !sub._expanded }"
+            >
               <MarkdownContent :content="sub.content" />
+              <div v-if="sub._needCollapse && !sub._expanded" class="collapse-mask"></div>
+            </div>
+            <div v-if="sub._needCollapse" class="expand-toggle sub-expand" @click="sub._expanded = !sub._expanded">
+              <span>{{ sub._expanded ? '收起' : '展开全文' }}</span>
+              <el-icon :class="{ 'is-expanded': sub._expanded }"><ArrowDown /></el-icon>
             </div>
             <div class="sub-footer">
               <LikeCount :count="sub.like_count || 0" />
@@ -135,11 +157,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { getThread, getSubReplies } from '../../api'
 import { getThreadDetailCache, setThreadDetailCache } from '../../state/dataCache'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Sort, ArrowDown } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
 import MarkdownContent from '../../components/MarkdownContent.vue'
 import CachedAvatar from '../../components/CachedAvatar.vue'
@@ -156,9 +178,25 @@ const page = ref(1)
 const pageSize = 20
 const total = ref(0)
 const totalPages = ref(0)
+const replySort = ref('desc')
 
 const formatTime = (time) => {
   return dayjs(time).format('YYYY-MM-DD HH:mm')
+}
+
+const REPLY_MAX_HEIGHT = 300
+const SUB_REPLY_MAX_HEIGHT = 200
+
+// 内容渲染后检测高度，决定是否需要折叠
+const setContentRef = (el, item, maxHeight = REPLY_MAX_HEIGHT) => {
+  if (!el) return
+  nextTick(() => {
+    const scrollH = el.scrollHeight
+    if (scrollH > maxHeight && !item._measured) {
+      item._needCollapse = true
+      item._measured = true
+    }
+  })
 }
 
 const applyThreadRes = (res) => {
@@ -171,14 +209,14 @@ const applyThreadRes = (res) => {
 const loadThread = async () => {
   loading.value = true
   try {
-    const cached = getThreadDetailCache(threadId.value, page.value, pageSize)
+    const cached = getThreadDetailCache(threadId.value, page.value, pageSize, replySort.value)
     if (cached) {
       applyThreadRes(cached)
       return
     }
 
-    const res = await getThread(threadId.value, { page: page.value, page_size: pageSize })
-    applyThreadRes(setThreadDetailCache(threadId.value, page.value, pageSize, res))
+    const res = await getThread(threadId.value, { page: page.value, page_size: pageSize, sort: replySort.value })
+    applyThreadRes(setThreadDetailCache(threadId.value, page.value, pageSize, res, replySort.value))
   } catch (error) {
     console.error('Failed to load thread:', error)
   } finally {
@@ -187,7 +225,18 @@ const loadThread = async () => {
 }
 
 const loadReplies = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   loadThread()
+}
+
+const handleSortChange = () => {
+  page.value = 1
+  loadThread()
+}
+
+const toggleSort = () => {
+  replySort.value = replySort.value === 'asc' ? 'desc' : 'asc'
+  handleSortChange()
 }
 
 const loadMoreSubReplies = async (reply) => {
@@ -361,6 +410,9 @@ loadThread()
 
 .section-header {
   margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   h3 {
     font-size: 20px;
     font-weight: 600;
@@ -368,6 +420,33 @@ loadThread()
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+}
+
+.reply-sort-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  .el-icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+    
+    &.is-desc {
+      transform: rotate(180deg);
+    }
   }
 }
 
@@ -421,6 +500,66 @@ loadThread()
     padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
   }
+}
+
+/* 内容折叠 */
+.floor-content.is-collapsed {
+  max-height: 300px;
+  overflow: hidden;
+  position: relative;
+}
+
+.sub-content.is-collapsed {
+  max-height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.collapse-mask {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--bg-secondary));
+  pointer-events: none;
+}
+
+.sub-replies-container .collapse-mask {
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4));
+}
+
+.expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 0;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--primary-color);
+  }
+
+  .el-icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+
+    &.is-expanded {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+.sub-expand {
+  margin-left: 32px;
+  font-size: 12px;
+  justify-content: flex-start;
 }
 
 /* 楼中楼 - 深色内凹风格 */

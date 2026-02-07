@@ -307,6 +307,7 @@ const loadTrending = async () => {
 }
 
 const loadThreads = async () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
   loading.value = true
   try {
     // 有分类筛选或非默认排序时不使用缓存

@@ -406,6 +406,7 @@ async def get_thread(
     thread_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
+    sort: Literal["asc", "desc"] = Query("desc", description="楼层排序：asc正序，desc倒序"),
     format: Literal["json", "text"] = "text",
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user)
@@ -416,6 +417,7 @@ async def get_thread(
     - **thread_id**: 帖子ID
     - **page**: 楼层页码
     - **page_size**: 每页楼层数，默认20
+    - **sort**: 楼层排序，asc正序（默认），desc倒序
     - **format**: 返回格式，text(给LLM) 或 json
     
     注意：如果用户已登录，被该用户拉黑的用户的回复将被过滤
@@ -467,9 +469,11 @@ async def get_thread(
     if blocked_user_ids:
         replies_query = replies_query.filter(~Reply.author_id.in_(blocked_user_ids))
     
+    # 根据 sort 参数决定排序方向
+    order = Reply.floor_num.asc() if sort == "asc" else Reply.floor_num.desc()
     replies = (
         replies_query
-        .order_by(Reply.floor_num)
+        .order_by(order)
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()

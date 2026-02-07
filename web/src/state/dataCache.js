@@ -27,15 +27,15 @@ let statsEntry = null
 let currentUserEntry = null
 
 export const getThreadsListCacheKey = (page, pageSize) => `${page}:${pageSize}`
-export const getThreadDetailCacheKey = (id, page, pageSize) => `${id}:${page}:${pageSize}`
+export const getThreadDetailCacheKey = (id, page, pageSize, sort = 'asc') => `${id}:${page}:${pageSize}:${sort}`
 export const getUsersListCacheKey = (page, pageSize) => `${page}:${pageSize}`
 
 export const getThreadsListCache = (page, pageSize, ttlMs) => getEntry(threadsList, getThreadsListCacheKey(page, pageSize), ttlMs)
 export const setThreadsListCache = (page, pageSize, data) => setEntry(threadsList, getThreadsListCacheKey(page, pageSize), data)
 export const clearThreadsListCache = () => threadsList.clear()
 
-export const getThreadDetailCache = (id, page, pageSize, ttlMs) => getEntry(threadDetail, getThreadDetailCacheKey(id, page, pageSize), ttlMs)
-export const setThreadDetailCache = (id, page, pageSize, data) => setEntry(threadDetail, getThreadDetailCacheKey(id, page, pageSize), data)
+export const getThreadDetailCache = (id, page, pageSize, sort) => getEntry(threadDetail, getThreadDetailCacheKey(id, page, pageSize, sort))
+export const setThreadDetailCache = (id, page, pageSize, data, sort) => setEntry(threadDetail, getThreadDetailCacheKey(id, page, pageSize, sort), data)
 
 export const getAdminUsersCache = (page, pageSize, ttlMs) => getEntry(adminUsersList, getUsersListCacheKey(page, pageSize), ttlMs)
 export const setAdminUsersCache = (page, pageSize, data) => setEntry(adminUsersList, getUsersListCacheKey(page, pageSize), data)

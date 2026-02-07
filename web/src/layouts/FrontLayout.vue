@@ -100,13 +100,25 @@
         </router-view>
       </div>
     </main>
+
+    <!-- 回到顶部按钮 -->
+    <transition name="back-top-fade">
+      <button 
+        v-show="showBackTop" 
+        class="back-top-btn" 
+        @click="scrollToTop"
+        title="回到顶部"
+      >
+        <el-icon><Top /></el-icon>
+      </button>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Brush, Moon, Sunny, MagicStick } from '@element-plus/icons-vue'
+import { Brush, Moon, Sunny, MagicStick, Top } from '@element-plus/icons-vue'
 import { getCurrentUser } from '../api'
 import { clearAllCache, getCurrentUserCache, setCurrentUserCache } from '../state/dataCache'
 import CachedAvatar from '../components/CachedAvatar.vue'
@@ -186,11 +198,25 @@ const handleCommand = (command) => {
   }
 }
 
+// 回到顶部
+const showBackTop = ref(false)
+const handleScroll = () => {
+  showBackTop.value = window.scrollY > 400
+}
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 onMounted(() => {
   // 初始化主题
   initTheme()
   theme.value = getCurrentTheme()
   loadUser()
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
@@ -198,6 +224,49 @@ onMounted(() => {
 .front-layout {
   min-height: 100vh;
   background: transparent; 
+}
+
+// 回到顶部按钮
+.back-top-btn {
+  position: fixed;
+  right: 24px;
+  bottom: 32px;
+  z-index: 999;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+    background: var(--bg-tertiary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.back-top-fade-enter-active,
+.back-top-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.back-top-fade-enter-from,
+.back-top-fade-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 .front-header {
@@ -432,6 +501,14 @@ onMounted(() => {
     .user-avatar {
         border-width: 0;
     }
+  }
+
+  .back-top-btn {
+    right: 16px;
+    bottom: 24px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
 }
 </style>
