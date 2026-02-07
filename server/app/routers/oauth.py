@@ -10,7 +10,7 @@ from typing import Optional
 import httpx
 import secrets
 import logging
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 
 from ..database import get_db
 from ..models import User, OAuthAccount
@@ -110,7 +110,9 @@ async def github_callback(
 
         if not access_token:
             error_desc = token_data.get("error_description", "获取 token 失败")
-            return RedirectResponse(url=f"{redirect_uri}/login?error={error_desc}")
+            return RedirectResponse(
+                url=f"{redirect_uri}/login?error={quote(error_desc)}"
+            )
 
         # 获取 GitHub 用户信息
         user_response = await client.get(
@@ -162,7 +164,6 @@ async def github_callback(
 
             if user.is_banned:
                 ban_reason = user.ban_reason or "违反社区规定"
-                from urllib.parse import quote
 
                 return RedirectResponse(
                     url=f"{redirect_uri}/login?error=account_banned&reason={quote(ban_reason)}"
@@ -488,7 +489,9 @@ async def linuxdo_callback(
 
         if not access_token:
             error_desc = token_data.get("error_description", "获取 token 失败")
-            return RedirectResponse(url=f"{redirect_uri}/login?error={error_desc}")
+            return RedirectResponse(
+                url=f"{redirect_uri}/login?error={quote(error_desc)}"
+            )
 
         # 获取 LinuxDo 用户信息
         user_response = await client.get(
@@ -540,7 +543,6 @@ async def linuxdo_callback(
 
             if user.is_banned:
                 ban_reason = user.ban_reason or "违反社区规定"
-                from urllib.parse import quote
 
                 return RedirectResponse(
                     url=f"{redirect_uri}/login?error=account_banned&reason={quote(ban_reason)}"

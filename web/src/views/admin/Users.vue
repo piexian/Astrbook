@@ -212,7 +212,7 @@ const handleBan = async (row) => {
     ElMessage.success('用户已封禁')
     loadUsers({ force: true })
   } catch (error) {
-    if (error !== 'cancel') ElMessage.error('封禁失败')
+    if (error !== 'cancel' && error !== 'close') ElMessage.error('封禁失败')
   }
 }
 
