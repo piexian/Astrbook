@@ -6,7 +6,7 @@
         <h1>Astrbook 后台</h1>
         <p>管理员登录</p>
       </div>
-      
+
       <el-form :model="form" @submit.prevent="handleLogin" class="login-form">
         <el-form-item>
           <el-input
@@ -26,7 +26,7 @@
             :prefix-icon="Lock"
           />
         </el-form-item>
-        
+
         <el-button
           type="primary"
           native-type="submit"
@@ -37,7 +37,7 @@
           登录
         </el-button>
       </el-form>
-      
+
       <div class="login-footer">
         <router-link to="/login">
           <el-button text type="primary" size="small">返回前台登录</el-button>
@@ -70,7 +70,7 @@ const handleLogin = async () => {
     ElMessage.warning('请输入密码')
     return
   }
-  
+
   loading.value = true
   try {
     const res = await adminLogin(form.value.username, form.value.password)
@@ -91,30 +91,22 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: var(--bg-body);
 }
 
 .login-card {
   width: 90%;
   max-width: 448px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius, 16px);
   padding: 48px 40px 36px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
-    pointer-events: none;
+
+  @media (max-width: 480px) {
+    padding: 36px 24px 28px;
   }
 }
 
@@ -123,14 +115,13 @@ const handleLogin = async () => {
   margin-bottom: 40px;
   position: relative;
   z-index: 1;
-  
+
   .logo {
     width: 64px;
     height: 64px;
     margin-bottom: 24px;
-    filter: drop-shadow(0 0 10px rgba(176, 38, 255, 0.3));
   }
-  
+
   h1 {
     font-size: 28px;
     font-weight: 600;
@@ -138,7 +129,7 @@ const handleLogin = async () => {
     margin-bottom: 8px;
     font-family: 'Space Grotesk', sans-serif;
   }
-  
+
   p {
     color: var(--text-secondary);
     font-size: 16px;
@@ -149,43 +140,43 @@ const handleLogin = async () => {
   margin-bottom: 24px;
   position: relative;
   z-index: 1;
-  
+
   :deep(.el-input__wrapper) {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--bg-input);
     box-shadow: none;
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--btn-radius, 12px);
     padding: 8px 16px;
-    
+
     &.is-focus {
-      border-color: var(--acid-purple);
-      box-shadow: 0 0 0 1px var(--acid-purple), 0 0 10px rgba(176, 38, 255, 0.2);
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 1px var(--primary-color);
     }
-    
+
     .el-input__inner {
       color: var(--text-primary);
       height: 32px;
-      
+
       &::placeholder {
         color: var(--text-disabled);
       }
     }
   }
-  
+
   :deep(.el-button--primary) {
-    background: var(--acid-purple);
+    background: var(--primary-color);
     border: none;
-    border-radius: 12px;
+    border-radius: var(--btn-radius, 12px);
     height: 48px;
     font-weight: 600;
     font-size: 16px;
     margin-top: 16px;
     transition: all 0.3s;
-    
+
     &:hover {
       background: var(--primary-hover);
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(176, 38, 255, 0.4);
+      box-shadow: var(--shadow-card-hover);
     }
   }
 }
@@ -194,12 +185,12 @@ const handleLogin = async () => {
   text-align: center;
   position: relative;
   z-index: 1;
-  
+
   :deep(.el-button--primary.is-text) {
     color: var(--text-secondary);
-    
+
     &:hover {
-      color: var(--acid-purple);
+      color: var(--primary-color);
     }
   }
 }

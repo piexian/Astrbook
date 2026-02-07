@@ -1,7 +1,7 @@
 <template>
-  <div class="sidebar" :class="{ collapsed }">
+  <div class="sidebar" :class="{ 'is-collapsed': collapsed, 'is-mobile': mode === 'mobile' }">
     <div class="logo">
-      <img src="https://cf.s3.soulter.top/astrbot-logo.svg" alt="logo" class="logo-icon">
+      <img src="/linuxdo.ico" alt="logo" class="logo-icon">
       <span v-show="!collapsed" class="logo-text">Astrbook</span>
       <span v-show="!collapsed" class="version">v1.0.0</span>
     </div>
@@ -13,14 +13,15 @@
         :to="item.path"
         class="nav-item"
         :class="{ active: isActive(item.path) }"
+        @click="handleItemClick"
       >
         <el-icon class="nav-icon"><component :is="item.icon" /></el-icon>
         <span v-show="!collapsed" class="nav-text">{{ item.title }}</span>
       </router-link>
     </nav>
     
-    <div class="sidebar-footer">
-      <div class="nav-item" @click="collapsed = !collapsed">
+    <div class="sidebar-footer" v-if="mode === 'desktop'">
+      <div class="nav-item collapse-btn" @click="toggleCollapse">
         <el-icon class="nav-icon">
           <Fold v-if="!collapsed" />
           <Expand v-else />
@@ -32,11 +33,23 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'desktop', // 'desktop' | 'mobile'
+  },
+  collapsed: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['item-click', 'update:collapsed'])
+
 const route = useRoute()
-const collapsed = ref(false)
 
 const menuItems = [
   { path: '/admin/dashboard', title: '仪表盘', icon: 'DataAnalysis' },
@@ -50,31 +63,48 @@ const isActive = (path) => {
   if (path === '/admin/dashboard') return route.path === '/admin' || route.path === '/admin/dashboard'
   return route.path.startsWith(path)
 }
+
+const toggleCollapse = () => {
+  emit('update:collapsed', !props.collapsed)
+}
+
+const handleItemClick = () => {
+  if (props.mode === 'mobile') {
+    emit('item-click')
+  }
+}
 </script>
 
 <style lang="scss" scoped>
 .sidebar {
-  width: 256px;
-  min-height: 100vh;
-  background: rgba(15, 15, 17, 0.6);
-  backdrop-filter: blur(var(--blur-amount));
-  border-right: 1px solid var(--glass-border);
+  height: 100%;
   display: flex;
   flex-direction: column;
-  transition: width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  background: var(--bg-sidebar);
+  backdrop-filter: blur(var(--blur-amount));
+  border-right: 1px solid var(--border-color);
+  transition: width 0.3s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.3s;
+  width: 256px;
   
-  &.collapsed {
+  &.is-collapsed {
     width: 72px;
+  }
+
+  &.is-mobile {
+    width: 100%; // 在 Drawer 中占满
+    border-right: none;
+    background: transparent; // Drawer 负责背景
   }
 }
 
 .logo {
-  height: 72px;
+  height: var(--header-height);
   display: flex;
   align-items: center;
   padding: 0 24px;
   gap: 12px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
   
   .logo-icon {
     width: 32px;
@@ -86,6 +116,7 @@ const isActive = (path) => {
     font-weight: 600;
     color: var(--text-primary);
     font-family: 'Space Grotesk', sans-serif;
+    white-space: nowrap;
   }
   
   .version {
@@ -96,12 +127,15 @@ const isActive = (path) => {
     padding: 2px 6px;
     border-radius: 4px;
     border: 1px solid rgba(204, 255, 0, 0.2);
+    white-space: nowrap;
   }
 }
 
 .nav-menu {
   flex: 1;
   padding: 16px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .nav-item {
@@ -113,21 +147,23 @@ const isActive = (path) => {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
-  border-radius: 8px;
+  border-radius: var(--btn-radius);
   text-decoration: none;
+  white-space: nowrap;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg);
     color: var(--text-primary);
   }
   
   &.active {
-    background: rgba(176, 38, 255, 0.1);
-    color: var(--acid-purple);
-    border: 1px solid rgba(176, 38, 255, 0.2);
+    background: rgba(176, 38, 255, 0.1); // Fallback if var not ready
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    color: var(--primary-color);
+    border: 1px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
     
     .nav-icon {
-      color: var(--acid-purple);
+      color: var(--primary-color);
     }
   }
   
@@ -136,6 +172,7 @@ const isActive = (path) => {
     margin-right: 12px;
     color: var(--text-secondary);
     transition: color 0.2s;
+    flex-shrink: 0;
   }
   
   .nav-text {
@@ -144,7 +181,7 @@ const isActive = (path) => {
   }
 }
 
-.sidebar.collapsed {
+.sidebar.is-collapsed {
   .nav-item {
     padding: 0;
     justify-content: center;
@@ -173,6 +210,7 @@ const isActive = (path) => {
 
 .sidebar-footer {
   padding: 16px 12px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
 }
 </style>

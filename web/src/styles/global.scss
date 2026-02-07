@@ -12,12 +12,13 @@ body {
   font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0f0f11; /* 深色背景作为酸性风格的基底 */
-  color: #e0e0e0;
+  background-color: var(--bg-body); /* 使用语义变量 */
+  color: var(--text-primary);
   overflow-x: hidden;
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-text-size-adjust: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 button,
@@ -30,50 +31,77 @@ textarea {
 // 酸性 + 毛玻璃 + 拟物 风格变量
 :root {
   color-scheme: dark;
-  // 酸性色彩 (Acid Colors)
+  
+  /* --- 基础调色板 (Primitives) --- */
   --acid-green: #ccff00;
   --acid-purple: #b026ff;
   --acid-pink: #ff00cc;
   --acid-blue: #00ffff;
-  
-  // 品牌色映射
-  --primary-color: var(--acid-purple);
-  --primary-hover: #c557ff;
-  
-  // 玻璃与材质 (Glass & Material)
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-highlight: rgba(255, 255, 255, 0.2);
-  --glass-shadow: rgba(0, 0, 0, 0.5);
-  --blur-amount: 16px;
-  
-  // 拟物/光影 (Neumorphism/Lighting)
-  --surface-gradient: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
-  --inner-glow: inset 0 0 20px rgba(255, 255, 255, 0.02);
-  
-  // 文字颜色
+  --white: #ffffff;
+  --black: #000000;
+  --dark-bg: #0f0f11;
+  --light-bg: #f5f7fa;
+
+  /* --- 语义变量 (Semantic) - 默认 Dark Mode --- */
+  --bg-body: var(--dark-bg);
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.07);
+  --bg-sidebar: rgba(15, 15, 17, 0.85);
+  --bg-header: rgba(15, 15, 17, 0.85);
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-input-focus: rgba(255, 255, 255, 0.08);
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-badge: rgba(255, 255, 255, 0.08);
+
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.7);
-  --text-disabled: rgba(255, 255, 255, 0.3);
-  
-  // 阴影与圆角
-  --card-shadow: 
-    0 8px 32px 0 rgba(0, 0, 0, 0.37),
-    inset 1px 1px 0 0 rgba(255, 255, 255, 0.1),
-    inset -1px -1px 0 0 rgba(0, 0, 0, 0.2);
-  
-  --card-radius: 24px; // 更大的圆角
-  --btn-radius: 12px;
-
-  // Accent aliases (used by some pages)
-  --accent-purple: var(--acid-purple);
-  --accent-blue: var(--acid-blue);
-  --accent-cyan: var(--acid-blue);
-
-  // Extra text tone
   --text-tertiary: rgba(255, 255, 255, 0.55);
+  --text-disabled: rgba(255, 255, 255, 0.3);
 
-  // Element Plus skeleton colors (match dark theme)
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+
+  --primary-color: var(--acid-purple);
+  --primary-hover: #c557ff;
+  --primary-bg: rgba(176, 38, 255, 0.1);
+
+  // 状态色
+  --success-color: #67c23a;
+  --success-bg: rgba(103, 194, 58, 0.12);
+  --warning-color: #e6a23c;
+  --warning-bg: rgba(230, 162, 60, 0.12);
+  --danger-color: #f56c6c;
+  --danger-bg: rgba(245, 108, 108, 0.12);
+  --info-color: #909399;
+  --info-bg: rgba(144, 147, 153, 0.12);
+
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: rgba(0, 0, 0, 0.5);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.4);
+
+  /* --- 布局 --- */
+  --card-radius: 16px;
+  --card-radius-lg: 20px;
+  --btn-radius: 12px;
+  --blur-amount: 16px;
+
+  --page-padding: 24px;
+  --header-height: 64px;
+  --sidebar-width: 256px;
+  --sidebar-collapsed-width: 72px;
+
+  /* Element Plus Overrides for Dark */
+  --el-color-primary: var(--acid-purple);
+  --el-bg-color: var(--bg-body);
+  --el-text-color-primary: var(--text-primary);
+  --el-border-color-light: var(--border-color);
+  --el-fill-color-blank: transparent;
   --el-skeleton-color: rgba(255, 255, 255, 0.06);
   --el-skeleton-to-color: rgba(255, 255, 255, 0.14);
 
@@ -84,14 +112,68 @@ textarea {
   --duration: 260ms;
   --duration-leave: 120ms;
 
-  // Layout tokens
-  --page-padding: 24px;
-  --header-height: 72px;
   --safe-top: 0px;
   --safe-right: 0px;
   --safe-bottom: 0px;
   --safe-left: 0px;
 }
+
+/* --- Light Mode Overrides --- */
+:root.light {
+  color-scheme: light;
+
+  --bg-body: var(--light-bg);
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9f9fb;
+  --bg-sidebar: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.92);
+  --bg-input: #f0f2f5;
+  --bg-input-focus: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.3);
+  --bg-badge: #f0f2f5;
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #606274;
+  --text-tertiary: #8c8ea0;
+  --text-disabled: #c0c2cc;
+
+  --border-color: #e4e7ed;
+  --border-hover: #c0c4cc;
+
+  --primary-color: #722ed1;
+  --primary-hover: #9254de;
+  --primary-bg: rgba(114, 46, 209, 0.08);
+
+  --success-color: #52c41a;
+  --success-bg: rgba(82, 196, 26, 0.08);
+  --warning-color: #faad14;
+  --warning-bg: rgba(250, 173, 20, 0.08);
+  --danger-color: #ff4d4f;
+  --danger-bg: rgba(255, 77, 79, 0.08);
+  --info-color: #8c8c8c;
+  --info-bg: rgba(140, 140, 140, 0.08);
+
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shadow: rgba(0, 0, 0, 0.06);
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+
+  /* Element Plus Overrides for Light */
+  --el-color-primary: var(--primary-color);
+  --el-bg-color: #ffffff;
+  --el-text-color-primary: var(--text-primary);
+  --el-border-color-light: var(--border-color);
+  --el-fill-color-blank: #ffffff;
+  --el-skeleton-color: #e0e2e6;
+  --el-skeleton-to-color: #f0f2f5;
+}
+
+/* Common Styles continue... */
 
 // 全局背景动画容器 (用于放置流体光斑)
 @supports (padding: env(safe-area-inset-top)) {
@@ -118,6 +200,12 @@ textarea {
   filter: blur(60px);
   animation: fluid-move 20s ease-in-out infinite alternate;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s;
+}
+
+:root.light #app::before {
+  opacity: 0;
 }
 
 @keyframes fluid-move {
@@ -148,10 +236,10 @@ textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-thumb);
   border-radius: 4px;
   &:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--scrollbar-thumb-hover);
   }
 }
 
@@ -172,13 +260,14 @@ a {
 
 // 卡片基础样式
 .card {
-  background: white;
+  background: var(--bg-card);
   border-radius: var(--card-radius);
-  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+  // box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+  box-shadow: var(--shadow-card);
   padding: 24px;
-  transition: box-shadow 0.2s;
-  border: 1px solid #dadce0;
-  box-shadow: none; // Google 风格倾向于用边框或者极淡的阴影
+  transition: box-shadow 0.2s, background-color 0.3s, border-color 0.3s;
+  border: 1px solid var(--border-color);
+  // box-shadow: none; // Google 风格倾向于用边框或者极淡的阴影
   
   &:hover {
     // box-shadow: var(--card-hover-shadow);

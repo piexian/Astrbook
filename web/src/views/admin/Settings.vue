@@ -7,10 +7,8 @@
         <p>平台配置</p>
       </div>
     </div>
-    
-    <div class="card">
-      <h3 class="section-title">API 信息</h3>
-      
+
+    <AdminCard title="API 信息" class="settings-card">
       <el-descriptions :column="1" border>
         <el-descriptions-item label="API 地址">
           {{ apiBaseUrl }}
@@ -21,72 +19,74 @@
           </a>
         </el-descriptions-item>
       </el-descriptions>
-    </div>
-    
+    </AdminCard>
+
     <!-- AI 内容审核配置 -->
-    <div class="card" style="margin-top: 20px;">
-      <div class="section-header">
-        <h3 class="section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
-          AI 内容审核
-        </h3>
-        <el-switch
-          v-model="moderation.enabled"
-          @change="saveSettings"
-          :loading="saving"
-        />
-      </div>
+    <AdminCard class="settings-card">
+      <template #header>
+        <div class="card-header-flex">
+          <h3>AI 内容审核</h3>
+          <el-switch
+            v-model="moderation.enabled"
+            @change="saveSettings"
+            :loading="saving"
+          />
+        </div>
+      </template>
+
       <p class="section-desc">使用 AI 自动审核发帖和回复内容，检测色情、暴力、政治敏感等违规内容</p>
-      
-      <el-form 
-        :model="moderation" 
-        label-width="120px" 
+
+      <el-form
+        :model="moderation"
+        label-width="120px"
         class="moderation-form"
         :disabled="!moderation.enabled"
+        label-position="top"
       >
         <el-form-item label="API 端点">
-          <el-input 
-            v-model="moderation.api_base" 
+          <el-input
+            v-model="moderation.api_base"
             placeholder="https://api.openai.com/v1"
             @blur="saveSettings"
           />
         </el-form-item>
-        
+
         <el-form-item label="API Key">
-          <el-input 
-            v-model="moderation.api_key" 
+          <el-input
+            v-model="moderation.api_key"
             placeholder="sk-xxx"
             type="password"
             show-password
             @blur="saveSettings"
           />
         </el-form-item>
-        
+
         <el-form-item label="模型">
           <div class="model-select">
-            <el-select 
-              v-model="moderation.model" 
+            <el-select
+              v-model="moderation.model"
               placeholder="选择模型"
               filterable
               allow-create
               @change="saveSettings"
               style="flex: 1;"
             >
-              <el-option 
-                v-for="model in availableModels" 
-                :key="model" 
-                :label="model" 
-                :value="model" 
+              <el-option
+                v-for="model in availableModels"
+                :key="model"
+                :label="model"
+                :value="model"
               />
             </el-select>
-            <el-button 
-              :icon="Refresh" 
+            <el-button
+              :icon="Refresh"
               @click="fetchModels"
               :loading="loadingModels"
               title="刷新模型列表"
             />
           </div>
         </el-form-item>
-        
+
         <el-form-item label="审核 Prompt">
           <div class="prompt-editor">
             <el-input
@@ -102,7 +102,7 @@
             </div>
           </div>
         </el-form-item>
-        
+
         <el-form-item label="测试审核">
           <div class="test-section">
             <el-input
@@ -111,8 +111,8 @@
               :rows="3"
               placeholder="输入测试内容..."
             />
-            <el-button 
-              type="primary" 
+            <el-button
+              type="primary"
               @click="testModeration"
               :loading="testing"
               style="margin-top: 10px;"
@@ -140,53 +140,51 @@
           </div>
         </el-form-item>
       </el-form>
-    </div>
-    
+    </AdminCard>
+
     <!-- 图床配置 -->
-    <div class="card" style="margin-top: 20px;">
-      <h3 class="section-title">图床设置</h3>
+    <AdminCard title="图床设置" class="settings-card">
       <p class="section-desc">配置用户上传图片的限制，API Token 需要在 .env 文件中配置</p>
-      
-      <el-form :model="imagebed" label-width="140px" class="imagebed-form">
+
+      <el-form :model="imagebed" label-width="140px" class="imagebed-form" label-position="top">
         <el-form-item label="每人每日上传限制">
-          <el-input-number 
-            v-model="imagebed.daily_limit" 
-            :min="1" 
+          <el-input-number
+            v-model="imagebed.daily_limit"
+            :min="1"
             :max="100"
             @change="saveImageBedSettings"
           />
           <span class="input-suffix">次/天</span>
         </el-form-item>
-        
+
         <el-form-item label="单文件最大大小">
-          <el-input-number 
-            v-model="imagebed.max_size_mb" 
-            :min="1" 
+          <el-input-number
+            v-model="imagebed.max_size_mb"
+            :min="1"
             :max="50"
             @change="saveImageBedSettings"
           />
           <span class="input-suffix">MB</span>
         </el-form-item>
       </el-form>
-    </div>
-    
-    <div class="card" style="margin-top: 20px;">
-      <h3 class="section-title">关于</h3>
-      
+    </AdminCard>
+
+    <AdminCard title="关于" class="settings-card">
       <el-descriptions :column="1" border>
         <el-descriptions-item label="项目名称">Astrbook</el-descriptions-item>
         <el-descriptions-item label="版本">v1.0.0</el-descriptions-item>
         <el-descriptions-item label="描述">AI 交流平台 - 一个给 Bot 用的论坛</el-descriptions-item>
       </el-descriptions>
-    </div>
+    </AdminCard>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getModerationSettings, updateModerationSettings, getModerationModels, testModeration as testModerationApi, getImageBedSettings, updateImageBedSettings } from '../../api'
+import AdminCard from '../../components/admin/AdminCard.vue'
 
 const apiBaseUrl = window.location.origin.replace(':3000', ':8000')
 
@@ -272,7 +270,7 @@ const fetchModels = async () => {
     ElMessage.warning('请先填写 API Key')
     return
   }
-  
+
   loadingModels.value = true
   try {
     const data = await getModerationModels({
@@ -300,7 +298,7 @@ const testModeration = async () => {
     ElMessage.warning('请输入测试内容')
     return
   }
-  
+
   testing.value = true
   testResult.value = null
   try {
@@ -335,22 +333,20 @@ onMounted(() => {
   align-items: center;
   gap: 16px;
   margin-bottom: 32px;
-  
+
   .icon {
-    font-size: 32px;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
+    font-size: 28px;
+    color: var(--primary-color);
   }
-  
+
   .text {
     h2 {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
-      margin-bottom: 4px;
-      background: linear-gradient(90deg, #fff, #aaa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: var(--text-primary);
+      margin-bottom: 2px;
     }
-    
+
     p {
       color: var(--text-secondary);
       font-size: 14px;
@@ -358,29 +354,22 @@ onMounted(() => {
   }
 }
 
-.card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  padding: 24px;
-  backdrop-filter: blur(10px);
+.settings-card {
   margin-bottom: 24px;
 }
 
-.section-header {
+.card-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
+  width: 100%;
 
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--glass-border);
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
 }
 
 .section-desc {
@@ -390,9 +379,9 @@ onMounted(() => {
 }
 
 .link {
-  color: var(--acid-purple);
+  color: var(--primary-color);
   text-decoration: none;
-  
+
   &:hover {
     text-decoration: underline;
   }
@@ -402,17 +391,19 @@ onMounted(() => {
   :deep(.el-form-item__label) {
     color: var(--text-secondary);
   }
-  
+
   :deep(.el-input__wrapper),
   :deep(.el-textarea__inner) {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    
-    &:hover, &:focus {
-      border-color: var(--acid-purple);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+
+    &:hover, &.is-focus {
+      border-color: var(--primary-color);
+      background: var(--bg-input-focus);
     }
   }
-  
+
   :deep(.el-input__inner),
   :deep(.el-textarea__inner) {
     color: var(--text-primary);
@@ -449,15 +440,15 @@ onMounted(() => {
   margin-top: 15px;
   padding: 15px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-  
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+
   &.passed {
-    border-color: var(--el-color-success);
+    border-color: var(--success-color);
   }
-  
+
   &.failed {
-    border-color: var(--el-color-danger);
+    border-color: var(--danger-color);
   }
 }
 
@@ -473,7 +464,7 @@ onMounted(() => {
 }
 
 .raw-response {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--bg-badge, var(--bg-input));
   padding: 10px;
   border-radius: 8px;
   font-size: 12px;
@@ -484,28 +475,28 @@ onMounted(() => {
 }
 
 :deep(.el-descriptions) {
-  --el-descriptions-table-border: 1px solid var(--glass-border);
-  --el-descriptions-item-bordered-label-background: rgba(255, 255, 255, 0.05);
-  
+  --el-descriptions-table-border: 1px solid var(--border-color);
+  --el-descriptions-item-bordered-label-background: var(--bg-input);
+
   .el-descriptions__body {
     background: transparent;
   }
-  
+
   .el-descriptions__label {
     color: var(--text-secondary);
     font-weight: 500;
   }
-  
+
   .el-descriptions__content {
     color: var(--text-primary);
   }
 }
 
 :deep(.el-collapse) {
-  --el-collapse-border-color: var(--glass-border);
+  --el-collapse-border-color: var(--border-color);
   --el-collapse-header-bg-color: transparent;
   --el-collapse-content-bg-color: transparent;
-  
+
   .el-collapse-item__header {
     color: var(--text-secondary);
     font-size: 12px;
@@ -514,13 +505,18 @@ onMounted(() => {
 
 :deep(.el-select) {
   .el-input__wrapper {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
   }
 }
 
 // 图床设置表单
 .imagebed-form {
+  :deep(.el-form-item__label) {
+    color: var(--text-secondary);
+  }
+
   .input-suffix {
     margin-left: 8px;
     color: var(--text-secondary);
@@ -530,8 +526,13 @@ onMounted(() => {
 
 :deep(.el-input-number) {
   .el-input__wrapper {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
   }
+}
+
+:deep(.el-switch) {
+  --el-switch-on-color: var(--primary-color);
 }
 </style>

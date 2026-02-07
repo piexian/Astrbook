@@ -19,93 +19,84 @@
       />
     </div>
 
-    <div class="card">
-      <el-skeleton v-if="loading && threads.length === 0" :rows="8" animated />
-
-      <div
-        v-else
-        v-loading="loading && threads.length > 0"
-        element-loading-background="rgba(0, 0, 0, 0)"
-        style="width: 100%"
-      >
-        <el-table :data="threads" style="width: 100%">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="title" label="标题" min-width="200">
-            <template #default="{ row }">
-              <router-link :to="`/admin/thread/${row.id}`" class="thread-link">
-                {{ row.title }}
-              </router-link>
-            </template>
-          </el-table-column>
-          <el-table-column label="分类" width="160">
-            <template #default="{ row }">
-              <el-select
-                v-model="row.category"
-                size="small"
-                @change="handleCategoryChange(row)"
-                class="category-select"
-              >
-                <el-option
-                  v-for="cat in categories"
-                  :key="cat.key"
-                  :label="cat.name"
-                  :value="cat.key"
-                >
-                  <div class="category-option">
-                    <CategoryIcon :category="cat.key" class="category-icon" />
-                    <span>{{ cat.name }}</span>
-                  </div>
-                </el-option>
-              </el-select>
-            </template>
-          </el-table-column>
-          <el-table-column label="作者" width="150">
-            <template #default="{ row }">
-              <div class="author-cell">
-                <el-avatar :size="28" :src="row.author.avatar">
-                  {{ row.author.nickname[0] }}
-                </el-avatar>
-                <span>{{ row.author.nickname }}</span>
+    <DataGrid :items="threads" :loading="loading" :skeleton-count="6">
+      <template #default="{ item }">
+        <AdminCard hoverable>
+          <template #header>
+            <div class="thread-card-header">
+              <span class="thread-id">#{{ item.id }}</span>
+              <div class="thread-stats">
+                <span class="stat"><el-icon><Comment /></el-icon> {{ item.reply_count }}</span>
+                <span class="stat"><el-icon><Star /></el-icon> {{ item.like_count || 0 }}</span>
               </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="reply_count" label="回复数" width="80" align="center" />
-          <el-table-column label="最后回复" width="140">
-            <template #default="{ row }">
-              {{ formatTime(row.last_reply_at) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="发布时间" width="140">
-            <template #default="{ row }">
-              {{ formatTime(row.created_at) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="80" fixed="right">
-            <template #default="{ row }">
-              <el-button
-                type="danger"
-                text
-                size="small"
-                @click="handleDelete(row)"
-              >
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+            </div>
+          </template>
 
-        <div class="pagination-wrapper">
-          <el-pagination
-            v-model:current-page="page"
-            v-model:page-size="pageSize"
-            :total="total"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @current-change="loadThreads"
-            @size-change="loadThreads"
-          />
-        </div>
-      </div>
+          <div class="thread-card-body">
+            <router-link :to="`/admin/thread/${item.id}`" class="thread-title">
+              {{ item.title }}
+            </router-link>
+
+            <div class="thread-author">
+              <el-avatar :size="24" :src="item.author?.avatar">
+                {{ item.author?.nickname?.[0] }}
+              </el-avatar>
+              <span>{{ item.author?.nickname }}</span>
+            </div>
+
+            <div class="thread-info">
+              <div class="info-row">
+                <span class="info-label">分类</span>
+                <el-select
+                  v-model="item.category"
+                  size="small"
+                  @change="handleCategoryChange(item)"
+                  class="category-select"
+                  @click.stop
+                >
+                  <el-option
+                    v-for="cat in categories"
+                    :key="cat.key"
+                    :label="cat.name"
+                    :value="cat.key"
+                  />
+                </el-select>
+              </div>
+              <div class="info-row">
+                <span class="info-label">发布</span>
+                <span class="info-value">{{ formatTime(item.created_at) }}</span>
+              </div>
+              <div class="info-row" v-if="item.last_reply_at">
+                <span class="info-label">最后回复</span>
+                <span class="info-value">{{ formatTime(item.last_reply_at) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <template #footer>
+            <router-link :to="`/admin/thread/${item.id}`">
+              <el-button text type="primary" size="small">
+                <el-icon><View /></el-icon> 查看
+              </el-button>
+            </router-link>
+            <el-button text type="danger" size="small" @click="handleDelete(item)" style="margin-left: auto;">
+              <el-icon><Delete /></el-icon> 删除
+            </el-button>
+          </template>
+        </AdminCard>
+      </template>
+    </DataGrid>
+
+    <div class="pagination-wrapper" v-if="total > pageSize">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50]"
+        layout="total, prev, pager, next"
+        @current-change="loadThreads"
+        @size-change="loadThreads"
+      />
     </div>
   </div>
 </template>
@@ -117,8 +108,9 @@ import { ref, onMounted } from 'vue'
 import { getAdminThreads, getCategories, adminDeleteThread, adminUpdateThreadCategory } from '../../api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getThreadsListCache, setThreadsListCache, clearThreadsListCache } from '../../state/dataCache'
-import CategoryIcon from '../../components/icons/CategoryIcons.vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Delete, View, Comment, Star } from '@element-plus/icons-vue'
+import AdminCard from '../../components/admin/AdminCard.vue'
+import DataGrid from '../../components/admin/DataGrid.vue'
 import dayjs from 'dayjs'
 
 const threads = ref([])
@@ -129,9 +121,7 @@ const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 
-const formatTime = (time) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm')
-}
+const formatTime = (time) => dayjs(time).format('MM-DD HH:mm')
 
 let searchTimer = null
 const handleSearch = () => {
@@ -166,11 +156,8 @@ const loadThreads = async (options = {}) => {
   try {
     const params = { page: page.value, page_size: pageSize.value }
     if (searchQuery.value) params.q = searchQuery.value
-
     const res = await getAdminThreads(params)
-
     const cachedRes = !searchQuery.value ? setThreadsListCache(page.value, pageSize.value, res) : res
-
     threads.value = cachedRes.items || []
     total.value = cachedRes.total || 0
   } catch (error) {
@@ -193,18 +180,12 @@ const handleCategoryChange = async (row) => {
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(
-      `确定要删除帖子 "${row.title}" 吗？此操作不可恢复。`,
-      '确认删除',
-      { type: 'warning' }
-    )
+    await ElMessageBox.confirm(`确定要删除帖子 "${row.title}" 吗？此操作不可恢复。`, '确认删除', { type: 'warning' })
     await adminDeleteThread(row.id)
     ElMessage.success('删除成功')
     loadThreads({ force: true })
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+    if (error !== 'cancel') ElMessage.error('删除失败')
   }
 }
 
@@ -224,161 +205,131 @@ loadThreads()
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 
-  .icon {
-    font-size: 32px;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
-  }
+  .icon { font-size: 28px; color: var(--primary-color); }
 
   .text {
-    h2 {
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      background: linear-gradient(90deg, #fff, #aaa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    p {
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
+    h2 { font-size: 22px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    p { color: var(--text-secondary); font-size: 14px; }
   }
 }
 
 .search-bar {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 
   .search-input {
-    max-width: 300px;
+    max-width: 360px;
 
     :deep(.el-input__wrapper) {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--glass-border);
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
       box-shadow: none;
-      border-radius: 12px;
+      border-radius: var(--btn-radius);
+      &.is-focus { border-color: var(--primary-color); }
+    }
+    :deep(.el-input__inner) { color: var(--text-primary); }
+  }
+}
 
-      &.is-focus {
-        border-color: var(--acid-purple);
+.thread-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .thread-id {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: monospace;
+  }
+
+  .thread-stats {
+    display: flex;
+    gap: 12px;
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+  }
+}
+
+.thread-card-body {
+  .thread-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    line-height: 1.4;
+    text-decoration: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
+
+  .thread-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    span {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+  }
+
+  .thread-info {
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+
+      .info-label {
+        font-size: 13px;
+        color: var(--text-tertiary);
+      }
+
+      .info-value {
+        font-size: 13px;
+        color: var(--text-secondary);
       }
     }
   }
 }
 
-.card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  padding: 24px;
-  backdrop-filter: blur(10px);
-}
-
-.thread-link {
-  color: var(--text-primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
-
-  &:hover {
-    color: var(--acid-purple);
-  }
-}
-
-.author-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  span {
-    color: var(--text-secondary);
-  }
-}
-
-// 分类选择器样式
 .category-select {
-  width: 100%;
-}
+  width: 120px;
 
-.category-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .category-icon {
-    width: 16px;
-    height: 16px;
-    color: var(--acid-purple);
-  }
-}
-
-:deep(.el-select) {
-  .el-input__wrapper {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
+  :deep(.el-input__wrapper) {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
     box-shadow: none;
+    height: 28px;
 
-    &:hover {
-      border-color: var(--acid-purple);
-    }
+    &:hover { border-color: var(--primary-color); }
   }
 
-  .el-input__inner {
+  :deep(.el-input__inner) {
     color: var(--text-primary);
+    font-size: 13px;
   }
 }
 
 .pagination-wrapper {
   margin-top: 24px;
   display: flex;
-  justify-content: flex-end;
-}
-
-// 表格样式覆盖
-:deep(.el-table) {
-  background: transparent;
-  --el-table-border-color: var(--glass-border);
-  --el-table-header-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
-
-  th.el-table__cell {
-    background: transparent;
-    color: var(--text-secondary);
-    font-weight: 500;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  td.el-table__cell {
-    border-bottom: 1px solid var(--glass-border);
-    color: var(--text-primary);
-  }
-
-  .el-table__inner-wrapper::before {
-    display: none;
-  }
-}
-
-// 分页样式覆盖
-:deep(.el-pagination) {
-  --el-pagination-bg-color: transparent;
-  --el-pagination-button-disabled-bg-color: transparent;
-  --el-pagination-hover-color: var(--acid-purple);
-
-  .el-pager li {
-    background: transparent;
-    color: var(--text-secondary);
-
-    &.is-active {
-      color: var(--acid-purple);
-      font-weight: bold;
-    }
-  }
-
-  button {
-    background: transparent;
-    color: var(--text-secondary);
-  }
+  justify-content: center;
 }
 </style>

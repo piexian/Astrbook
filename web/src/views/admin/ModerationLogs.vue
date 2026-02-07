@@ -7,9 +7,9 @@
         <p>查看 AI 内容审核记录</p>
       </div>
     </div>
-    
+
     <!-- 统计卡片 -->
-    <div class="stats-row">
+    <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">{{ stats.total }}</div>
         <div class="stat-label">总审核次数</div>
@@ -27,97 +27,83 @@
         <div class="stat-label">拦截率</div>
       </div>
     </div>
-    
+
     <!-- 筛选 -->
     <div class="filter-bar">
-      <el-radio-group v-model="filter" @change="loadLogs">
+      <el-radio-group v-model="filter" @change="loadLogs" size="small">
         <el-radio-button :value="null">全部</el-radio-button>
         <el-radio-button :value="true">通过</el-radio-button>
         <el-radio-button :value="false">拦截</el-radio-button>
       </el-radio-group>
     </div>
-    
-    <!-- 日志表格 -->
-    <div class="card">
-      <el-table 
-        :data="logs" 
-        v-loading="loading"
-        style="width: 100%"
-        :row-class-name="tableRowClassName"
-      >
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag size="small" :type="getTypeTagType(row.content_type)">
-              {{ getTypeName(row.content_type) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="用户" width="120">
-          <template #default="{ row }">
-            {{ row.username || `用户#${row.user_id}` }}
-          </template>
-        </el-table-column>
-        <el-table-column label="内容预览" min-width="250">
-          <template #default="{ row }">
-            <div class="content-preview">
-              {{ row.content_preview }}
+
+    <!-- 日志卡片网格 -->
+    <DataGrid :items="logs" :loading="loading" :skeleton-count="6">
+      <template #default="{ item }">
+        <AdminCard :class="{ 'blocked-card': !item.passed }">
+          <template #header>
+            <div class="log-card-header">
+              <div class="log-badges">
+                <el-tag :type="item.passed ? 'success' : 'danger'" size="small">
+                  {{ item.passed ? '通过' : '拦截' }}
+                </el-tag>
+                <el-tag :type="getTypeTagType(item.content_type)" size="small" effect="plain">
+                  {{ getTypeName(item.content_type) }}
+                </el-tag>
+              </div>
+              <span class="log-id">#{{ item.id }}</span>
             </div>
           </template>
-        </el-table-column>
-        <el-table-column label="结果" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.passed ? 'success' : 'danger'" size="small">
-              {{ row.passed ? '✓ 通过' : '✗ 拦截' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="违规类别" width="120">
-          <template #default="{ row }">
-            <span v-if="row.flagged_category" class="category-tag">
-              {{ getCategoryName(row.flagged_category) }}
-            </span>
-            <span v-else class="text-muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="原因" min-width="150">
-          <template #default="{ row }">
-            <span v-if="row.reason">{{ row.reason }}</span>
-            <span v-else class="text-muted">-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="模型" width="130">
-          <template #default="{ row }">
-            <span class="model-name">{{ row.model_used || '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="时间" width="170">
-          <template #default="{ row }">
-            {{ formatTime(row.created_at) }}
-          </template>
-        </el-table-column>
-      </el-table>
-      
-      <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="page"
-          v-model:page-size="pageSize"
-          :total="total"
-          :page-sizes="[20, 50, 100]"
-          layout="total, sizes, prev, pager, next"
-          @current-change="loadLogs"
-          @size-change="loadLogs"
-        />
-      </div>
+
+          <div class="log-card-body">
+            <div class="log-user">
+              <el-icon><User /></el-icon>
+              <span>{{ item.username || `用户#${item.user_id}` }}</span>
+            </div>
+
+            <div class="log-content-preview">
+              {{ item.content_preview }}
+            </div>
+
+            <div v-if="!item.passed" class="log-block-info">
+              <div v-if="item.flagged_category" class="block-category">
+                {{ getCategoryName(item.flagged_category) }}
+              </div>
+              <div v-if="item.reason" class="block-reason">
+                {{ item.reason }}
+              </div>
+            </div>
+
+            <div class="log-footer-info">
+              <span class="log-time">{{ formatTime(item.created_at) }}</span>
+              <span v-if="item.model_used" class="log-model">{{ item.model_used }}</span>
+            </div>
+          </div>
+        </AdminCard>
+      </template>
+    </DataGrid>
+
+    <!-- 分页 -->
+    <div class="pagination-wrapper" v-if="total > pageSize">
+      <el-pagination
+        v-model:current-page="page"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[20, 50, 100]"
+        layout="total, prev, pager, next"
+        @current-change="loadLogs"
+        @size-change="loadLogs"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { Document } from '@element-plus/icons-vue'
+import { Document, User } from '@element-plus/icons-vue'
 import { getModerationLogs, getModerationStats } from '../../api'
+import AdminCard from '../../components/admin/AdminCard.vue'
+import DataGrid from '../../components/admin/DataGrid.vue'
 
 const loading = ref(false)
 const logs = ref([])
@@ -126,11 +112,7 @@ const pageSize = ref(20)
 const total = ref(0)
 const filter = ref(null)
 
-const stats = ref({
-  total: 0,
-  passed: 0,
-  blocked: 0
-})
+const stats = ref({ total: 0, passed: 0, blocked: 0 })
 
 const blockRate = computed(() => {
   if (stats.value.total === 0) return 0
@@ -140,14 +122,8 @@ const blockRate = computed(() => {
 const loadLogs = async () => {
   loading.value = true
   try {
-    const params = {
-      page: page.value,
-      page_size: pageSize.value
-    }
-    if (filter.value !== null) {
-      params.passed = filter.value
-    }
-    
+    const params = { page: page.value, page_size: pageSize.value }
+    if (filter.value !== null) params.passed = filter.value
     const data = await getModerationLogs(params)
     logs.value = data.items
     total.value = data.total
@@ -168,40 +144,23 @@ const loadStats = async () => {
 }
 
 const getTypeName = (type) => {
-  const types = {
-    thread: '发帖',
-    reply: '回复',
-    sub_reply: '楼中楼'
-  }
+  const types = { thread: '发帖', reply: '回复', sub_reply: '楼中楼' }
   return types[type] || type
 }
 
 const getTypeTagType = (type) => {
-  const types = {
-    thread: 'primary',
-    reply: 'success',
-    sub_reply: 'info'
-  }
+  const types = { thread: 'primary', reply: 'success', sub_reply: 'info' }
   return types[type] || 'info'
 }
 
 const getCategoryName = (category) => {
-  const categories = {
-    sexual: '🔞 色情',
-    violence: '🔪 暴力',
-    political: '🏛️ 政治',
-    none: '-'
-  }
+  const categories = { sexual: '色情', violence: '暴力', political: '政治', none: '-' }
   return categories[category] || category
 }
 
 const formatTime = (time) => {
   if (!time) return '-'
   return new Date(time).toLocaleString('zh-CN')
-}
-
-const tableRowClassName = ({ row }) => {
-  return row.passed ? '' : 'blocked-row'
 }
 
 onMounted(() => {
@@ -219,144 +178,173 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
-  
-  .icon {
-    font-size: 32px;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
-  }
-  
+  margin-bottom: 28px;
+
+  .icon { font-size: 28px; color: var(--primary-color); }
+
   .text {
-    h2 {
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      background: linear-gradient(90deg, #fff, #aaa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
-    p {
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
+    h2 { font-size: 22px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+    p { color: var(--text-secondary); font-size: 14px; }
   }
 }
 
-.stats-row {
+.stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .stat-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
   padding: 20px;
   text-align: center;
-  
+  box-shadow: var(--shadow-card);
+  transition: all 0.25s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
   .stat-value {
     font-size: 28px;
     font-weight: 600;
     color: var(--text-primary);
+    font-family: 'Space Grotesk', sans-serif;
   }
-  
+
   .stat-label {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text-secondary);
     margin-top: 4px;
   }
-  
+
   &.success {
-    border-color: var(--el-color-success);
-    .stat-value { color: var(--el-color-success); }
+    border-color: var(--success-color);
+    .stat-value { color: var(--success-color); }
   }
-  
+
   &.danger {
-    border-color: var(--el-color-danger);
-    .stat-value { color: var(--el-color-danger); }
+    border-color: var(--danger-color);
+    .stat-value { color: var(--danger-color); }
   }
 }
 
 .filter-bar {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+
+  :deep(.el-radio-group) {
+    .el-radio-button__inner {
+      background: var(--bg-input);
+      border-color: var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    .el-radio-button__original-radio:checked + .el-radio-button__inner {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: white;
+    }
+  }
 }
 
-.card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  padding: 24px;
-  backdrop-filter: blur(10px);
+// Log card styles
+.log-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .log-badges {
+    display: flex;
+    gap: 6px;
+  }
+
+  .log-id {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    font-family: monospace;
+  }
 }
 
-.content-preview {
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--text-primary);
+.log-card-body {
+  .log-user {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .log-content-preview {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .log-block-info {
+    padding: 8px 12px;
+    background: var(--danger-bg);
+    border-radius: 8px;
+    margin-bottom: 10px;
+
+    .block-category {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--danger-color);
+      margin-bottom: 4px;
+    }
+
+    .block-reason {
+      font-size: 12px;
+      color: var(--danger-color);
+      opacity: 0.8;
+    }
+  }
+
+  .log-footer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .log-time {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .log-model {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-tertiary);
+      background: var(--bg-badge, var(--bg-input));
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+  }
 }
 
-.category-tag {
-  color: var(--el-color-danger);
-  font-size: 13px;
-}
-
-.model-name {
-  font-family: monospace;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.text-muted {
-  color: var(--text-secondary);
+.blocked-card {
+  :deep(.admin-card) {
+    border-left: 3px solid var(--danger-color);
+  }
 }
 
 .pagination-wrapper {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
-  justify-content: flex-end;
-}
-
-:deep(.el-table) {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(255, 255, 255, 0.05);
-  --el-table-row-hover-bg-color: rgba(255, 255, 255, 0.05);
-  --el-table-border-color: var(--glass-border);
-  --el-table-text-color: var(--text-primary);
-  --el-table-header-text-color: var(--text-secondary);
-  
-  .blocked-row {
-    background: rgba(255, 0, 0, 0.05);
-  }
-}
-
-:deep(.el-radio-group) {
-  .el-radio-button__inner {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: var(--glass-border);
-    color: var(--text-secondary);
-  }
-  
-  .el-radio-button__original-radio:checked + .el-radio-button__inner {
-    background: var(--acid-purple);
-    border-color: var(--acid-purple);
-    color: white;
-  }
-}
-
-:deep(.el-pagination) {
-  --el-pagination-bg-color: rgba(255, 255, 255, 0.05);
-  --el-pagination-button-bg-color: rgba(255, 255, 255, 0.05);
-  --el-pagination-hover-color: var(--acid-purple);
-  
-  .el-pagination__total,
-  .el-pagination__jump {
-    color: var(--text-secondary);
-  }
+  justify-content: center;
 }
 </style>
