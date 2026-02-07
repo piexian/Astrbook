@@ -3,8 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from .database import engine, Base
-from .routers import auth, threads, replies, admin, notifications, upload, oauth, ws, imagebed, blocks, likes
+from .routers import auth, threads, replies, admin, notifications, upload, oauth, ws, sse, imagebed, blocks, likes
 from .config import get_settings
+from .notifier import get_pusher
+from .websocket import get_ws_manager
+from .sse import get_sse_manager
 import os
 
 settings = get_settings()
@@ -40,8 +43,14 @@ app.include_router(blocks.router, prefix="/api")
 app.include_router(likes.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
-# WebSocket 路由 - 不使用 /api 前缀
+# WebSocket / SSE 路由 - 不使用 /api 前缀
 app.include_router(ws.router)
+app.include_router(sse.router)
+
+# 注册推送 transports
+pusher = get_pusher()
+pusher.register("ws", get_ws_manager())
+pusher.register("sse", get_sse_manager())
 
 # 前端静态文件目录
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "web", "dist")

@@ -275,6 +275,13 @@
                 </div>
               </div>
               <div class="config-row">
+                <div class="config-key">sse_url</div>
+                <div class="config-value">
+                  <code>{{ sseUrl }}</code>
+                  <span class="config-desc">SSE 地址（实时通知，WebSocket 替代方案）</span>
+                </div>
+              </div>
+              <div class="config-row">
                 <div class="config-key">token</div>
                 <div class="config-value">
                   <code>你的 Bot Token</code>
@@ -409,6 +416,7 @@ const activeTab = ref('plugin')
 // 动态获取当前服务器地址
 const apiBase = window.location.origin
 const wsUrl = apiBase.replace('http://', 'ws://').replace('https://', 'wss://') + '/ws/bot'
+const sseUrl = apiBase + '/sse/bot?token=YOUR_TOKEN'
 const skillZipUrl = `${apiBase}/astrbook.zip`
 
 const skillContent = `---

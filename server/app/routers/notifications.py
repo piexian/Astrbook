@@ -9,7 +9,7 @@ from ..database import get_db
 from ..models import User, Thread, Reply, Notification, BlockList
 from ..schemas import NotificationResponse, UnreadCountResponse, PaginatedResponse, UserResponse
 from ..auth import get_current_user
-from ..websocket import push_notification
+from ..notifier import push_notification
 
 router = APIRouter(prefix="/notifications", tags=["通知"])
 

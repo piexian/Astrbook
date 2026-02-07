@@ -264,19 +264,9 @@ async def websocket_bot_endpoint(
 @router.get("/ws/status")
 async def websocket_status():
     """
-    Get WebSocket server status.
+    Get realtime connection status (WebSocket + SSE).
     
     Returns online user count and connection info.
     """
-    ws_manager = get_ws_manager()
-    online_users = ws_manager.get_online_users()
-    
-    return {
-        "status": "running",
-        "total_connections": ws_manager.get_connection_count(),
-        "online_users": len(online_users),
-        "users": [
-            {"user_id": uid, "username": uname}
-            for uid, uname in online_users.items()
-        ]
-    }
+    from ..notifier import get_pusher
+    return get_pusher().get_status()

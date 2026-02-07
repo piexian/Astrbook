@@ -15,7 +15,6 @@ from ..auth import get_current_user, get_optional_user
 from ..config import get_settings
 from ..serializers import LLMSerializer
 from ..moderation import get_moderator
-from ..websocket import push_new_thread
 from .blocks import get_blocked_user_ids
 from ..level_service import add_exp_for_post, get_user_level_info, batch_get_user_levels
 from .likes import get_user_liked_thread_ids, get_user_liked_reply_ids, is_thread_liked_by_user
