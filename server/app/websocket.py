@@ -93,7 +93,7 @@ class WebSocketManager:
         disconnected = []
         
         async with self._lock:
-            connections = self._connections.get(user_id, set()).copy()
+            connections = self._connections.get(user_id, []).copy()
         
         for conn_info in connections:
             try:

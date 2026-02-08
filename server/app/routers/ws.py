@@ -38,6 +38,8 @@ def get_user_by_token(token: str) -> Optional[User]:
     try:
         user = db.query(User).filter(User.id == user_id).first()
         if user:
+            # 预加载所有列属性，确保 expunge 后不触发懒加载
+            db.refresh(user)
             # Detach user from session so it can be used after session closes
             db.expunge(user)
         return user
@@ -198,9 +200,9 @@ async def websocket_bot_endpoint(
             # Register with manager
             async with ws_manager._lock:
                 if user.id not in ws_manager._connections:
-                    ws_manager._connections[user.id] = set()
-                ws_manager._connections[user.id].add(conn_info)
-                ws_manager._all_connections.add(conn_info)
+                    ws_manager._connections[user.id] = []
+                ws_manager._connections[user.id].append(conn_info)
+                ws_manager._all_connections.append(conn_info)
             
             # Send welcome
             await websocket.send_json({
@@ -223,65 +225,66 @@ async def websocket_bot_endpoint(
             await websocket.close(code=4000, reason="Auth failed")
             return
     
-    # Main message loop with server-side heartbeat (30s interval)
-    HEARTBEAT_INTERVAL = 30.0
-    
-    async def _heartbeat():
-        """Server-side ping to detect dead connections"""
-        try:
-            while True:
-                await asyncio.sleep(HEARTBEAT_INTERVAL)
-                try:
-                    await websocket.send_json({
-                        "type": "ping",
-                        "timestamp": asyncio.get_event_loop().time()
-                    })
-                except Exception:
-                    # Connection dead, break out
-                    break
-        except asyncio.CancelledError:
-            pass
-    
-    heartbeat_task = asyncio.create_task(_heartbeat())
+    # Main message loop
+    # Note: We rely on WebSocket protocol-level ping/pong for keep-alive.
+    # The underlying websockets library handles protocol-level ping/pong automatically.
+    # Clients (e.g. aiohttp) may send protocol-level ping frames via ws.ping(),
+    # which are handled transparently and do NOT surface through receive_json().
+    # We use receive() instead of receive_json() to properly handle all frame types.
     
     try:
         while True:
+            message = await websocket.receive()
+            
+            # Handle different message types from Starlette's receive()
+            if message["type"] == "websocket.disconnect":
+                break
+            
+            if message["type"] != "websocket.receive":
+                continue
+            
+            # Parse text data frames
+            raw = message.get("text")
+            if raw is None:
+                # Binary frame or empty, skip
+                continue
+            
             try:
-                data = await websocket.receive_json()
-                msg_type = data.get("type")
-                
-                if msg_type == "ping":
-                    # Respond to ping with pong
-                    await websocket.send_json({
-                        "type": "pong",
-                        "timestamp": asyncio.get_event_loop().time()
-                    })
-                
-                elif msg_type == "pong":
-                    # Client responded to our heartbeat ping, connection is alive
-                    pass
-                
-                elif msg_type == "subscribe":
-                    # Future: subscribe to specific events
-                    await websocket.send_json({
-                        "type": "subscribed",
-                        "events": data.get("events", ["all"])
-                    })
-                
-                # Add more message handlers as needed
-                
+                data = json.loads(raw)
             except json.JSONDecodeError:
                 await websocket.send_json({
                     "type": "error",
                     "message": "Invalid JSON"
                 })
+                continue
+            
+            msg_type = data.get("type")
+            
+            if msg_type == "ping":
+                # Respond to application-level ping with pong
+                await websocket.send_json({
+                    "type": "pong",
+                    "timestamp": asyncio.get_event_loop().time()
+                })
+            
+            elif msg_type == "pong":
+                # Client responded to our ping, connection is alive
+                pass
+            
+            elif msg_type == "subscribe":
+                # Future: subscribe to specific events
+                await websocket.send_json({
+                    "type": "subscribed",
+                    "events": data.get("events", ["all"])
+                })
+            
+            # Add more message handlers as needed
                 
     except WebSocketDisconnect:
         logger.info(f"[WS] WebSocket disconnected for user {user.username if user else 'unknown'}")
     except Exception as e:
         logger.error(f"[WS] Error in websocket loop: {e}")
     finally:
-        heartbeat_task.cancel()
         if conn_info:
             await ws_manager.disconnect(conn_info)
 
