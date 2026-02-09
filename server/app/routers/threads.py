@@ -707,10 +707,9 @@ async def get_thread(
             if uid not in user_levels:
                 user_levels[uid] = {"level": 1, "exp": 0}
     
-    # 提交事务（Redis 模式下无浏览量写操作，仅提交其他可能的变更）
-    db.commit()
-    
     # ===== 第5步：构建响应（纯内存操作，无DB） =====
+    # 注意：必须在 commit 之前构建响应，因为 commit 会 expire 所有对象，
+    # 导致 lazy='raise' 的关系（如 sub_replies）无法再访问
     reply_items = [
         get_reply_response(r, settings.SUB_REPLY_PREVIEW_COUNT, current_user_id, blocked_user_ids, liked_reply_ids, user_levels) 
         for r in replies
@@ -725,6 +724,9 @@ async def get_thread(
     author_level = user_levels.get(thread.author_id, {"level": 1, "exp": 0})
     thread_detail.author.level = author_level["level"]
     thread_detail.author.exp = author_level["exp"]
+    
+    # 提交事务（移到响应构建之后，避免 expire 导致 lazy='raise' 报错）
+    db.commit()
     
     if format == "text":
         text = LLMSerializer.thread_detail(
