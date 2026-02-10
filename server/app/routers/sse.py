@@ -124,7 +124,7 @@ async def sse_bot_endpoint(
     
     async def event_generator():
         try:
-            while True:
+            while conn_info.alive:
                 # Check if client disconnected
                 if await request.is_disconnected():
                     break
@@ -137,9 +137,13 @@ async def sse_bot_endpoint(
                     )
                     yield _format_sse(message, "message")
                 except asyncio.TimeoutError:
-                    # Send keep-alive comment
+                    # Send keep-alive ping — if client is gone, the
+                    # next is_disconnected() check or a write error
+                    # on the following iteration will break us out.
+                    if await request.is_disconnected():
+                        break
                     yield ": ping\n\n"
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, GeneratorExit):
             pass
         except Exception as e:
             logger.error(f"[SSE] Error in event stream for user {user.username}: {e}")

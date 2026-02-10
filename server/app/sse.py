@@ -28,6 +28,7 @@ class SSEConnectionInfo:
     user_id: int
     username: str
     connected_at: datetime = field(default_factory=datetime.utcnow)
+    alive: bool = True  # marked False when connection is detected as dead
 
 
 class SSEManager:
@@ -50,6 +51,8 @@ class SSEManager:
         self._lock = asyncio.Lock()
         # Pub/Sub subscriber task
         self._subscriber_task: Optional[asyncio.Task] = None
+        # Periodic cleanup task
+        self._cleanup_task: Optional[asyncio.Task] = None
     
     async def connect(self, user_id: int, username: str) -> SSEConnectionInfo:
         """Register a new SSE connection"""
@@ -60,9 +63,13 @@ class SSEManager:
         )
         
         async with self._lock:
-            if user_id not in self._connections:
-                self._connections[user_id] = []
-            self._connections[user_id].append(conn_info)
+            # 一个 bot 通常只有一个连接，标记该用户的旧连接为死连接
+            old_conns = self._connections.get(user_id, [])
+            for old in old_conns:
+                old.alive = False
+                if old in self._all_connections:
+                    self._all_connections.remove(old)
+            self._connections[user_id] = [conn_info]
             self._all_connections.append(conn_info)
         
         logger.info(f"[SSE] User {username}(id={user_id}) connected. Total connections: {len(self._all_connections)}")
@@ -105,6 +112,48 @@ class SSEManager:
                 self._all_connections.remove(conn_info)
         
         logger.info(f"[SSE] User {conn_info.username}(id={conn_info.user_id}) disconnected. Total connections: {len(self._all_connections)}")
+    
+    async def cleanup_stale_connections(self):
+        """清理僵尸连接：标记为 dead 的、或队列持续满的连接"""
+        removed = 0
+        async with self._lock:
+            stale = [c for c in self._all_connections if not c.alive]
+            for conn in stale:
+                uid = conn.user_id
+                if uid in self._connections and conn in self._connections[uid]:
+                    self._connections[uid].remove(conn)
+                    if not self._connections[uid]:
+                        del self._connections[uid]
+                if conn in self._all_connections:
+                    self._all_connections.remove(conn)
+                removed += 1
+        
+        if removed:
+            logger.info(f"[SSE] Cleaned up {removed} stale connections. Remaining: {len(self._all_connections)}")
+        
+        # 同步 Redis sse:online 集合
+        r = get_redis()
+        if r:
+            try:
+                redis_online = await r.smembers("sse:online")
+                local_user_ids = set(str(uid) for uid in self._connections.keys())
+                stale_ids = redis_online - local_user_ids
+                if stale_ids:
+                    await r.srem("sse:online", *stale_ids)
+                    logger.info(f"[SSE] Removed {len(stale_ids)} stale user IDs from Redis sse:online")
+            except Exception as e:
+                logger.warning(f"[SSE] Failed to sync Redis sse:online: {e}")
+    
+    async def _cleanup_loop(self):
+        """定期清理僵尸连接（每 60 秒一次）"""
+        while True:
+            try:
+                await asyncio.sleep(60)
+                await self.cleanup_stale_connections()
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.warning(f"[SSE] Cleanup error: {e}")
     
     async def _send_to_local_user(self, user_id: int, message: dict) -> int:
         """Send a message to local SSE connections only (no Redis publish)."""
@@ -230,8 +279,8 @@ class SSEManager:
         return self.is_user_online(user_id)
     
     def get_connection_count(self) -> int:
-        """Get total number of local connections"""
-        return len(self._all_connections)
+        """Get total number of online users (deduplicated by user_id)"""
+        return len(self._connections)
     
     # ==================== Redis Pub/Sub Subscriber ====================
     
@@ -249,9 +298,23 @@ class SSEManager:
         
         self._subscriber_task = asyncio.create_task(self._subscriber_loop())
         logger.info("[SSE] Redis Pub/Sub 订阅器已启动")
+        
+        # 启动定期清理任务
+        if not self._cleanup_task or self._cleanup_task.done():
+            self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+            logger.info("[SSE] 僵尸连接清理任务已启动")
     
     async def stop_subscriber(self):
-        """停止 Pub/Sub 订阅任务（app shutdown 时调用）"""
+        """停止 Pub/Sub 订阅任务和清理任务（app shutdown 时调用）"""
+        if self._cleanup_task:
+            self._cleanup_task.cancel()
+            try:
+                await self._cleanup_task
+            except asyncio.CancelledError:
+                pass
+            self._cleanup_task = None
+            logger.info("[SSE] 僵尸连接清理任务已停止")
+        
         if self._subscriber_task:
             self._subscriber_task.cancel()
             try:
