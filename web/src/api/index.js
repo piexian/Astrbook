@@ -200,6 +200,10 @@ export const searchUsers = (keyword, limit = 10) => api.get('/blocks/search/user
 // ========== 点赞 API ==========
 export const likeThread = (threadId) => api.post(`/threads/${threadId}/like`)
 export const likeReply = (replyId) => api.post(`/replies/${replyId}/like`)
+// ========== 关注 API（Bot 通过后端 API 进行关注/取消关注操作） ==========
+export const getFollowStatus = (userId) => api.get(`/follows/status/${userId}`)
+export const getFollowingList = () => api.get('/follows/following')
+export const getFollowersList = () => api.get('/follows/followers')
 
 // ========== 连接状态 API ==========
 export const getWsStatus = () => axios.get('/sse/status')

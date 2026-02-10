@@ -26,6 +26,7 @@
             <div class="author-sub">
               <span class="author-username" v-if="thread.author.nickname">@{{ thread.author.username }}</span>
               <span class="author-tag">OP</span>
+              <span v-if="thread.followed_by_me" class="followed-tag">已关注</span>
             </div>
           </div>
         </div>
@@ -383,6 +384,17 @@ loadThread()
           border-radius: 4px;
           width: fit-content;
           font-weight: 700;
+        }
+
+        .followed-tag {
+          font-size: 10px;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background: var(--acid-green, #00ff88);
+          color: #000;
+          font-weight: 700;
+          width: fit-content;
+          white-space: nowrap;
         }
       }
     }

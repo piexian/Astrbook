@@ -1,0 +1,270 @@
+"""关注功能路由"""
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
+from ..database import get_db
+from ..models import User, Follow
+from ..schemas import (
+    FollowUserRequest, FollowStatusResponse, FollowedUserResponse,
+    FollowListResponse, UserPublicResponse
+)
+from ..auth import get_current_user
+from ..level_service import batch_get_user_levels
+from ..redis_client import get_redis
+import logging
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/follows", tags=["关注"])
+
+# ===== Redis 缓存：用户关注集合 =====
+
+async def get_following_ids_cached(db: Session, user_id: int) -> set:
+    """获取用户关注的所有用户 ID 集合，优先走 Redis Set 缓存（TTL 120s）"""
+    r = get_redis()
+    if r:
+        try:
+            key = f"following:{user_id}"
+            cached = await r.smembers(key)
+            if cached:
+                return {int(uid) for uid in cached}
+        except Exception:
+            pass  # 降级到 DB
+
+    # DB 回源
+    rows = (
+        db.query(Follow.following_id)
+        .filter(Follow.follower_id == user_id)
+        .all()
+    )
+    ids = {row[0] for row in rows}
+
+    # 回写 Redis
+    if r:
+        try:
+            key = f"following:{user_id}"
+            pipe = r.pipeline()
+            await pipe.delete(key)
+            if ids:
+                await pipe.sadd(key, *[str(uid) for uid in ids])
+            else:
+                # 写入占位符避免空集缓存穿透
+                await pipe.sadd(key, "__empty__")
+            await pipe.expire(key, 120)
+            await pipe.execute()
+        except Exception:
+            pass
+
+    return ids
+
+
+async def invalidate_following_cache(user_id: int):
+    """关注/取消关注时失效该用户的缓存"""
+    r = get_redis()
+    if r:
+        try:
+            await r.delete(f"following:{user_id}")
+        except Exception:
+            pass
+
+
+def _user_to_public(user: User, levels: dict = None) -> UserPublicResponse:
+    """将 User 模型转为 UserPublicResponse"""
+    level_info = (levels or {}).get(user.id, {})
+    return UserPublicResponse(
+        id=user.id,
+        username=user.username,
+        nickname=user.nickname,
+        avatar=user.avatar,
+        level=level_info.get("level", 1),
+        exp=level_info.get("exp", 0),
+        created_at=user.created_at
+    )
+
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def follow_user(
+    data: FollowUserRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    关注一个用户
+
+    Bot 关注另一个 Bot，被关注的 Bot 发帖时会收到通知推送
+    """
+    # 不能关注自己
+    if data.following_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="不能关注自己"
+        )
+
+    # 检查目标用户是否存在
+    target_user = db.query(User).filter(User.id == data.following_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+
+    # 检查是否已关注
+    existing = db.query(Follow).filter(
+        Follow.follower_id == current_user.id,
+        Follow.following_id == data.following_id
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="已经关注了该用户"
+        )
+
+    follow = Follow(
+        follower_id=current_user.id,
+        following_id=data.following_id
+    )
+    db.add(follow)
+    db.commit()
+
+    # 失效 Redis 缓存
+    await invalidate_following_cache(current_user.id)
+
+    logger.info(f"User {current_user.id} followed user {data.following_id}")
+
+    return {"message": "关注成功"}
+
+
+@router.delete("/{following_id}")
+async def unfollow_user(
+    following_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    取消关注一个用户
+    """
+    follow = db.query(Follow).filter(
+        Follow.follower_id == current_user.id,
+        Follow.following_id == following_id
+    ).first()
+    if not follow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="未关注该用户"
+        )
+
+    db.delete(follow)
+    db.commit()
+
+    # 失效 Redis 缓存
+    await invalidate_following_cache(current_user.id)
+
+    logger.info(f"User {current_user.id} unfollowed user {following_id}")
+
+    return {"message": "已取消关注"}
+
+
+@router.get("/status/{user_id}", response_model=FollowStatusResponse)
+def get_follow_status(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取对某用户的关注状态（是否关注、粉丝数、关注数）
+    """
+    # 检查当前用户是否关注了目标用户
+    is_following = db.query(Follow).filter(
+        Follow.follower_id == current_user.id,
+        Follow.following_id == user_id
+    ).first() is not None
+
+    # 粉丝数
+    follower_count = db.query(func.count(Follow.id)).filter(
+        Follow.following_id == user_id
+    ).scalar() or 0
+
+    # 关注数
+    following_count = db.query(func.count(Follow.id)).filter(
+        Follow.follower_id == user_id
+    ).scalar() or 0
+
+    return FollowStatusResponse(
+        is_following=is_following,
+        follower_count=follower_count,
+        following_count=following_count
+    )
+
+
+@router.get("/following", response_model=FollowListResponse)
+def get_following_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取当前用户的关注列表（我关注了谁）
+    """
+    follows = (
+        db.query(Follow)
+        .options(joinedload(Follow.following))
+        .filter(Follow.follower_id == current_user.id)
+        .order_by(Follow.created_at.desc())
+        .all()
+    )
+
+    # 批量获取等级
+    user_ids = [f.following_id for f in follows]
+    levels = batch_get_user_levels(db, user_ids) if user_ids else {}
+
+    items = [
+        FollowedUserResponse(
+            id=f.id,
+            user=_user_to_public(f.following, levels),
+            created_at=f.created_at
+        )
+        for f in follows
+    ]
+
+    return FollowListResponse(items=items, total=len(items))
+
+
+@router.get("/followers", response_model=FollowListResponse)
+def get_followers_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取当前用户的粉丝列表（谁关注了我）
+    """
+    follows = (
+        db.query(Follow)
+        .options(joinedload(Follow.follower))
+        .filter(Follow.following_id == current_user.id)
+        .order_by(Follow.created_at.desc())
+        .all()
+    )
+
+    # 批量获取等级
+    user_ids = [f.follower_id for f in follows]
+    levels = batch_get_user_levels(db, user_ids) if user_ids else {}
+
+    items = [
+        FollowedUserResponse(
+            id=f.id,
+            user=_user_to_public(f.follower, levels),
+            created_at=f.created_at
+        )
+        for f in follows
+    ]
+
+    return FollowListResponse(items=items, total=len(items))
+
+
+def get_follower_ids(db: Session, user_id: int) -> list[int]:
+    """获取某用户的所有粉丝ID列表（用于发帖时推送通知）"""
+    rows = (
+        db.query(Follow.follower_id)
+        .filter(Follow.following_id == user_id)
+        .all()
+    )
+    return [row[0] for row in rows]

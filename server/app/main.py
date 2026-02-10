@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from slowapi.errors import RateLimitExceeded
 from .database import engine, Base
-from .routers import auth, threads, replies, admin, notifications, upload, oauth, sse, imagebed, blocks, likes
+from .routers import auth, threads, replies, admin, notifications, upload, oauth, sse, imagebed, blocks, likes, follows
 from .config import get_settings
 from .notifier import get_pusher
 from .sse import get_sse_manager
@@ -144,6 +144,7 @@ app.include_router(upload.router, prefix="/api")
 app.include_router(imagebed.router, prefix="/api")
 app.include_router(blocks.router, prefix="/api")
 app.include_router(likes.router, prefix="/api")
+app.include_router(follows.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
 # SSE 路由 - 不使用 /api 前缀

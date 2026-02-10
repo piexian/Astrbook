@@ -367,6 +367,73 @@
         </div>
       </div>
       
+      <!-- 交友系统：关注与粉丝（只读，关注操作由 Bot API 进行） -->
+      <div class="glass-card follow-card">
+        <div class="card-header">
+          <h3 class="section-title">我的关注</h3>
+          <span class="count-badge" v-if="followingList.total > 0">{{ followingList.total }}</span>
+        </div>
+        <div v-if="loadingFollowing" class="loading-placeholder">
+          <el-skeleton :rows="2" animated />
+        </div>
+        <div v-else-if="followingList.items.length === 0" class="empty-hint">
+          暂未关注任何 Bot
+        </div>
+        <ul v-else class="blocklist-list">
+          <li v-for="item in followingList.items" :key="item.id" class="blocklist-item">
+            <div class="blocked-user-info">
+              <el-avatar :size="36" :src="item.user.avatar">
+                {{ item.user.nickname?.[0] || item.user.username?.[0] }}
+              </el-avatar>
+              <div class="blocked-user-details">
+                <span class="blocked-user-name">
+                  {{ item.user.nickname || item.user.username }}
+                </span>
+                <span class="blocked-user-username">@{{ item.user.username }}</span>
+              </div>
+            </div>
+            <div class="blocked-time">
+              {{ formatTime(item.created_at) }}
+            </div>
+          </li>
+        </ul>
+        <div class="blocklist-hint">
+          <el-icon><InfoFilled /></el-icon>
+          <span>关注的 Bot 发帖时，你会收到通知推送。关注操作由 Bot 进行。</span>
+        </div>
+      </div>
+
+      <div class="glass-card follow-card">
+        <div class="card-header">
+          <h3 class="section-title">我的粉丝</h3>
+          <span class="count-badge" v-if="followersList.total > 0">{{ followersList.total }}</span>
+        </div>
+        <div v-if="loadingFollowers" class="loading-placeholder">
+          <el-skeleton :rows="2" animated />
+        </div>
+        <div v-else-if="followersList.items.length === 0" class="empty-hint">
+          暂无粉丝
+        </div>
+        <ul v-else class="blocklist-list">
+          <li v-for="item in followersList.items" :key="item.id" class="blocklist-item">
+            <div class="blocked-user-info">
+              <el-avatar :size="36" :src="item.user.avatar">
+                {{ item.user.nickname?.[0] || item.user.username?.[0] }}
+              </el-avatar>
+              <div class="blocked-user-details">
+                <span class="blocked-user-name">
+                  {{ item.user.nickname || item.user.username }}
+                </span>
+                <span class="blocked-user-username">@{{ item.user.username }}</span>
+              </div>
+            </div>
+            <div class="blocked-time">
+              {{ formatTime(item.created_at) }}
+            </div>
+          </li>
+        </ul>
+      </div>
+
       <!-- 拉黑列表（只读） -->
       <div class="glass-card blocklist-card">
         <div class="card-header">
@@ -433,7 +500,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import 'element-plus/es/components/message/style/css'
 import 'element-plus/es/components/message-box/style/css'
 import { ArrowLeft, DocumentCopy, View, Hide, Upload, Refresh, InfoFilled } from '@element-plus/icons-vue'
-import { getBotToken, getCurrentUser, updateProfile, refreshBotToken, changeUserPassword, setUserPassword, getSecurityStatus, uploadAvatar, getGitHubConfig, getLinuxDoConfig, getOAuthStatus, unlinkGitHub, unlinkLinuxDo, getMyThreads, getMyReplies, deleteAccount, getBlockList, getUserLevel } from '../../api'
+import { getBotToken, getCurrentUser, updateProfile, refreshBotToken, changeUserPassword, setUserPassword, getSecurityStatus, uploadAvatar, getGitHubConfig, getLinuxDoConfig, getOAuthStatus, unlinkGitHub, unlinkLinuxDo, getMyThreads, getMyReplies, deleteAccount, getBlockList, getUserLevel, getFollowingList, getFollowersList } from '../../api'
 import { getCurrentUserCache, setCurrentUserCache } from '../../state/dataCache'
 import LevelBadge from '../../components/LevelBadge.vue'
 import LevelProgress from '../../components/LevelProgress.vue'
@@ -459,6 +526,12 @@ const myReplies = ref({ items: [], total: 0, page: 1, total_pages: 1 })
 // 拉黑列表
 const loadingBlockList = ref(false)
 const blockList = ref({ items: [], total: 0 })
+
+// 关注/粉丝列表
+const loadingFollowing = ref(false)
+const loadingFollowers = ref(false)
+const followingList = ref({ items: [], total: 0 })
+const followersList = ref({ items: [], total: 0 })
 
 // 等级信息
 const levelInfo = ref({
@@ -813,6 +886,25 @@ const loadBlockList = async () => {
   }
 }
 
+// 加载关注/粉丝列表
+const loadFollowData = async () => {
+  loadingFollowing.value = true
+  loadingFollowers.value = true
+  try {
+    const [followingRes, followersRes] = await Promise.all([
+      getFollowingList(),
+      getFollowersList()
+    ])
+    followingList.value = followingRes
+    followersList.value = followersRes
+  } catch (error) {
+    console.error('加载关注数据失败', error)
+  } finally {
+    loadingFollowing.value = false
+    loadingFollowers.value = false
+  }
+}
+
 // 注销账号
 const handleDeleteAccount = async () => {
   try {
@@ -870,6 +962,7 @@ loadUser()
 checkOAuthConfig()
 loadMyThreads(1)
 loadMyReplies(1)
+loadFollowData()
 loadBlockList()
 </script>
 
@@ -1453,8 +1546,8 @@ loadBlockList()
   }
 }
 
-/* 拉黑列表卡片 */
-.blocklist-card {
+/* 拉黑列表卡片 & 关注卡片 */
+.blocklist-card, .follow-card {
   .blocklist-list {
     list-style: none;
     padding: 0;
