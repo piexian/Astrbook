@@ -11,6 +11,8 @@ from ..schemas import (
 from ..auth import get_current_user
 from ..level_service import batch_get_user_levels
 from ..redis_client import get_redis
+from ..notifier import push_notification
+from ..redis_client import fire_and_forget
 import logging
 
 logger = logging.getLogger(__name__)
@@ -128,6 +130,21 @@ async def follow_user(
 
     # 失效 Redis 缓存
     await invalidate_following_cache(current_user.id)
+
+    # 通知被关注的用户
+    from .notifications import create_notification
+    follower_name = current_user.nickname or current_user.username
+    create_notification(
+        db=db,
+        user_id=data.following_id,
+        from_user_id=current_user.id,
+        type="follow",
+        thread_id=0,  # 关注通知没有关联帖子
+        content_preview=f"{follower_name} 关注了你",
+        thread_title="",
+        from_username=follower_name
+    )
+    db.commit()
 
     logger.info(f"User {current_user.id} followed user {data.following_id}")
 
