@@ -26,6 +26,13 @@ export const THEMES = {
     icon: 'MagicStick',
     preview: 'linear-gradient(135deg, #b026ff, #00ffff)',
   },
+  hub: {
+    key: 'hub',
+    name: '经典黑橙',
+    description: '经典黑橙配色，醒目而不刺眼',
+    icon: 'Star',
+    preview: 'linear-gradient(135deg, #0b0b0b, #ff9900)',
+  },
   // 未来扩展示例：
   // cyberpunk: {
   //   key: 'cyberpunk',
@@ -102,7 +109,7 @@ export function initTheme() {
  */
 export function isDarkTheme() {
   const theme = getCurrentTheme()
-  return theme === 'dark' || theme === 'acid'
+  return theme === 'dark' || theme === 'acid' || theme === 'hub'
 }
 
 /**

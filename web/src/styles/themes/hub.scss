@@ -1,0 +1,180 @@
+// ============================================
+// Hub 经典主题 (Classic Hub)
+// 经典黑橙配色，醒目而不刺眼
+// ============================================
+
+:root[data-theme="hub"] {
+  color-scheme: dark;
+
+  // ====== 颜色系统 ======
+  // Hub 特征色
+  --hub-orange: #ff9900;
+  --hub-orange-light: #ffb347;
+  --hub-orange-dark: #e68a00;
+  --hub-black: #0b0b0b;
+
+  // 背景色
+  --bg-primary: #0b0b0b;
+  --bg-secondary: #1b1b1b;
+  --bg-tertiary: #272727;
+  --bg-elevated: #323232;
+
+  // 边框色
+  --border-color: #333333;
+  --border-light: #444444;
+
+  // 品牌色
+  --primary-color: #ff9900;
+  --primary-hover: #ffb347;
+
+  // 强调色
+  --acid-green: #ff9900;
+  --acid-purple: #ff9900;
+  --acid-pink: #ff6600;
+  --acid-blue: #ffb347;
+  --accent-purple: var(--primary-color);
+  --accent-blue: var(--primary-color);
+  --accent-cyan: var(--hub-orange-light);
+
+  // 文字颜色
+  --text-primary: #f0f0f0;
+  --text-secondary: #b0b0b0;
+  --text-tertiary: #888888;
+  --text-disabled: #555555;
+
+  // ====== 布局/间距 ======
+  --header-height: 64px;
+  --page-padding: 24px;
+  --card-padding: 16px;
+  --card-radius: 6px;
+  --btn-radius: 4px;
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+  --gap-xl: 32px;
+
+  // ====== 效果 ======
+  // 阴影
+  --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  // 毛玻璃（禁用）
+  --blur-amount: 0px;
+  --glass-bg: var(--bg-secondary);
+  --glass-border: var(--border-color);
+  --glass-highlight: rgba(255, 153, 0, 0.05);
+  --glass-shadow: rgba(0, 0, 0, 0.4);
+
+  // 发光效果（微弱橙色光晕）
+  --glow-intensity: 0;
+  --surface-gradient: var(--bg-secondary);
+  --inner-glow: none;
+
+  // ====== 动画 ======
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --duration-fast: 150ms;
+  --duration: 200ms;
+  --duration-leave: 100ms;
+
+  // ====== Element Plus 适配 ======
+  --el-skeleton-color: var(--bg-tertiary);
+  --el-skeleton-to-color: var(--bg-elevated);
+
+  // ====== 组件特定样式 ======
+  // 标题样式
+  --title-font-size: 28px;
+  --title-gradient: none;
+  --title-text-fill: var(--hub-orange);
+  --title-filter: none;
+
+  // 搜索框 hover
+  --search-hover-bg: var(--bg-elevated);
+  --search-hover-border: var(--hub-orange);
+  --search-hover-color: var(--hub-orange);
+
+  // 分类激活样式
+  --category-active-bg: var(--hub-orange);
+  --category-active-border: var(--hub-orange);
+  --category-active-color: #000;
+
+  // 卡片悬停
+  --card-hover-transform: none;
+  --card-hover-shadow: 0 4px 12px rgba(255, 153, 0, 0.15);
+
+  // ====== Markdown 内容样式 ======
+  --md-code-bg: rgba(255, 153, 0, 0.1);
+  --md-code-border: rgba(255, 153, 0, 0.2);
+  --md-code-color: var(--hub-orange);
+  --md-pre-bg: #0a0a0a;
+  --md-pre-border: #333333;
+  --md-pre-code-color: #e0e0e0;
+  --md-media-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --md-media-border: #333333;
+  --md-media-hover-shadow: 0 6px 24px rgba(255, 153, 0, 0.2);
+  --md-blockquote-border: #555;
+  --md-blockquote-color: #a0a0a0;
+  --md-table-border: #444;
+  --md-table-th-bg: #272727;
+  --md-hr-color: #444;
+
+  // ====== 管理后台语义变量 ======
+  --bg-body: #0b0b0b;
+  --bg-card: #1b1b1b;
+  --bg-card-hover: #252525;
+  --bg-sidebar: #1b1b1b;
+  --bg-header: #1b1b1b;
+  --bg-input: #272727;
+  --bg-input-focus: #323232;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-badge: #272727;
+
+  --border-hover: #555555;
+  --primary-bg: rgba(255, 153, 0, 0.1);
+
+  --success-color: #67c23a;
+  --success-bg: rgba(103, 194, 58, 0.12);
+  --warning-color: #ff9900;
+  --warning-bg: rgba(255, 153, 0, 0.12);
+  --danger-color: #f56c6c;
+  --danger-bg: rgba(245, 108, 108, 0.12);
+  --info-color: #909399;
+  --info-bg: rgba(144, 147, 153, 0.12);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(255, 153, 0, 0.1);
+
+  --scrollbar-thumb: rgba(255, 153, 0, 0.25);
+  --scrollbar-thumb-hover: rgba(255, 153, 0, 0.45);
+
+  --sidebar-width: 256px;
+  --sidebar-collapsed-width: 72px;
+  --card-radius-lg: 10px;
+
+  --el-color-primary: var(--primary-color);
+  --el-bg-color: var(--bg-primary);
+  --el-text-color-primary: var(--text-primary);
+  --el-border-color-light: var(--border-color);
+  --el-fill-color-blank: transparent;
+  --el-switch-on-color: var(--primary-color);
+}
+
+// ====== Hub 主题 Logo 经典配色 ======
+html[data-theme="hub"] {
+  .logo-text-prefix {
+    color: #ffffff;
+  }
+  .logo-text-suffix {
+    background: #ff9900;
+    color: #000000;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 2px;
+    font-size: 0;
+    &::after {
+      content: 'hub';
+      font-size: 20px;
+    }
+  }
+}

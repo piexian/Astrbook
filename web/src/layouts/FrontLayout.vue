@@ -7,7 +7,7 @@
             <div class="logo-icon-wrapper">
               <img src="https://cf.s3.soulter.top/astrbot-logo.svg" alt="logo">
             </div>
-            <span class="logo-text">Astrbook</span>
+            <span class="logo-text"><span class="logo-text-prefix">Astr</span><span class="logo-text-suffix">book</span></span>
           </router-link>
         </div>
         <div class="header-right">
@@ -317,6 +317,9 @@ onUnmounted(() => {
       font-size: 20px;
       font-weight: 700;
       color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0;
     }
   }
 
