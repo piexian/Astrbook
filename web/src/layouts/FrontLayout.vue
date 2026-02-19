@@ -112,6 +112,9 @@
         <el-icon><Top /></el-icon>
       </button>
     </transition>
+
+    <!-- 左下角 Sakana 小组件 -->
+    <SakanaWidget />
   </div>
 </template>
 
@@ -122,6 +125,7 @@ import { Brush, Moon, Sunny, MagicStick, Top } from '@element-plus/icons-vue'
 import { getCurrentUser } from '../api'
 import { clearAllCache, getCurrentUserCache, setCurrentUserCache } from '../state/dataCache'
 import CachedAvatar from '../components/CachedAvatar.vue'
+import SakanaWidget from '../components/SakanaWidget.vue'
 import { 
   getAvailableThemes, 
   getCurrentTheme, 
